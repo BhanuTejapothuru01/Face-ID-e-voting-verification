@@ -4,6 +4,10 @@ import Home from './pages/Home';
 import Register from './pages/Register';
 import Verify from './pages/Verify';
 import AdminDashboard from './pages/AdminDashboard';
+import SessionManagement from './pages/SessionManagement';
+import VoterTerminal from './pages/VoterTerminal';
+import Ballot from './pages/Ballot';
+import VoteSuccess from './pages/VoteSuccess';
 
 function App() {
   return (
@@ -13,6 +17,10 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/verify" element={<Verify />} />
         <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/admin/sessions" element={<SessionManagement />} />
+        <Route path="/vote" element={<VoterTerminal />} />
+        <Route path="/vote/ballot" element={<Ballot />} />
+        <Route path="/vote/success" element={<VoteSuccess />} />
       </Routes>
     </Router>
   );

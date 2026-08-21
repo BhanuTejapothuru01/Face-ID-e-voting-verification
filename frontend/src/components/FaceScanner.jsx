@@ -20,7 +20,6 @@ export default function FaceScanner({ mode = 'verify', onResult, voterName = '' 
     setScanState('SCANNING');
 
     try {
-      // Capture a burst of frames (e.g. 3 frames over 500ms for liveness)
       const frames = [];
       for (let i = 0; i < 3; i++) {
         const frameBlob = await captureFn();
@@ -48,7 +47,6 @@ export default function FaceScanner({ mode = 'verify', onResult, voterName = '' 
       });
 
       setScanState('SEARCHING');
-
       const data = await response.json();
 
       if (!response.ok) {
@@ -56,7 +54,7 @@ export default function FaceScanner({ mode = 'verify', onResult, voterName = '' 
       }
 
       setScanState('VERIFIED');
-      setTimeout(() => onResult({ success: true, data }), 800);
+      setTimeout(() => onResult({ success: true, data }), 600);
       
     } catch (err) {
       console.error(err);
@@ -65,19 +63,19 @@ export default function FaceScanner({ mode = 'verify', onResult, voterName = '' 
       setTimeout(() => {
         setScanState('LOCKED');
         setIsProcessing(false);
-      }, 3000);
+      }, 2500);
     }
   };
 
   return (
-    <div className="flex flex-col items-center max-w-md w-full mx-auto space-y-6">
-      <div className="relative w-full">
+    <div className="flex flex-col items-center max-w-md w-full mx-auto space-y-4">
+      <div className="relative w-full rounded-xl overflow-hidden border border-zinc-800 bg-zinc-950">
         <Camera onCapture={handleCaptureReady} />
         <ScanAnimation state={scanState} />
       </div>
       
       {error && (
-        <div className="bg-red-950/50 border border-red-500/50 text-red-200 px-4 py-3 rounded-lg w-full text-sm">
+        <div className="bg-red-500/10 border border-red-500/30 text-red-400 px-3.5 py-2.5 rounded-lg w-full text-xs font-medium text-center">
           {error}
         </div>
       )}
@@ -85,13 +83,13 @@ export default function FaceScanner({ mode = 'verify', onResult, voterName = '' 
       <button 
         onClick={triggerScan}
         disabled={!captureFn || isProcessing || (mode === 'register' && !voterName)}
-        className={`w-full py-4 rounded-xl font-semibold tracking-wide transition-all ${
+        className={`w-full py-3 rounded-lg text-xs font-semibold tracking-wide transition ${
           !captureFn || isProcessing || (mode === 'register' && !voterName)
-            ? 'bg-gray-800 text-gray-500 cursor-not-allowed'
-            : 'bg-white text-black hover:bg-gray-200 active:scale-[0.98]'
+            ? 'bg-zinc-900 text-zinc-600 cursor-not-allowed border border-zinc-800'
+            : 'bg-white text-zinc-950 hover:bg-zinc-200 active:scale-[0.99] shadow-sm'
         }`}
       >
-        {isProcessing ? 'Processing...' : 'Start Biometric Scan'}
+        {isProcessing ? 'Processing Biometrics...' : 'Start Scan'}
       </button>
     </div>
   );

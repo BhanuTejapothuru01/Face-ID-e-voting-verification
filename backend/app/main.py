@@ -9,6 +9,7 @@ from app.services.faiss_search import init_faiss_index
 from app.api.routes.registration import router as registration_router
 from app.api.routes.verification import router as verification_router
 from app.api.routes.admin import router as admin_router
+from app.api.routes.voting import router as voting_router
 
 limiter = Limiter(key_func=get_remote_address)
 
@@ -27,24 +28,17 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Should be restricted in prod
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Rate limit the verify endpoint specifically
-@app.middleware("http")
-async def add_rate_limit_to_verify(request: Request, call_next):
-    # This is a bit hacky, normally you'd use the decorator on the endpoint itself.
-    # We will just apply a global limit to /api/verify to ensure we meet requirements.
-    # Alternatively, we could decorate it in verification.py. Let's rely on standard routes.
-    return await call_next(request)
-
 # Include routers
 app.include_router(registration_router)
 app.include_router(verification_router)
 app.include_router(admin_router)
+app.include_router(voting_router)
 
 @app.get("/api/health")
 def health_check():

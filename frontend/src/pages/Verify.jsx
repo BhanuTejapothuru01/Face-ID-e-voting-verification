@@ -14,16 +14,16 @@ export default function Verify() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white p-6 flex flex-col items-center">
-      <div className="w-full max-w-md mb-8">
-        <Link to="/" className="text-gray-500 hover:text-white flex items-center transition">
-          <ChevronLeft className="w-5 h-5 mr-1" /> Back to Home
+    <div className="min-h-screen bg-zinc-950 text-zinc-100 p-6 flex flex-col items-center font-sans">
+      <div className="w-full max-w-md mb-6">
+        <Link to="/" className="text-zinc-500 hover:text-zinc-200 text-xs font-mono flex items-center transition">
+          <ChevronLeft className="w-4 h-4 mr-1" /> Home
         </Link>
       </div>
 
-      <div className="text-center mb-8">
-        <h1 className="text-3xl font-black tracking-tight mb-2">Terminal Verification</h1>
-        <p className="text-gray-500 text-sm">Scan face to verify voter eligibility.</p>
+      <div className="text-center mb-6 space-y-1">
+        <h1 className="text-xl font-bold tracking-tight text-white">Biometric Verification</h1>
+        <p className="text-zinc-500 text-xs">Scan face to verify voter eligibility and cast single ballot.</p>
       </div>
 
       {!result ? (

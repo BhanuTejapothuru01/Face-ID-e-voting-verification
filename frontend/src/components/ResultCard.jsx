@@ -1,53 +1,91 @@
 import React from 'react';
+import { Check, ShieldAlert, AlertCircle, Clock, Vote } from 'lucide-react';
 
 export default function ResultCard({ result, onReset }) {
   if (!result) return null;
 
-  const isEligible = result.data?.eligibility === 'ELIGIBLE';
-  const isRegistered = result.data?.voter_id !== undefined;
+  const data = result.data || {};
+  const eligibility = data.eligibility || 'NOT VERIFIED';
 
-  let borderColor = 'border-gray-700';
-  let title = 'Not Verified';
-  let color = 'text-gray-400';
+  let borderColor = 'border-zinc-800';
+  let title = 'NOT RECOGNIZED';
+  let titleColor = 'text-zinc-400';
+  let Icon = AlertCircle;
 
-  if (isRegistered) {
-    if (isEligible) {
-      borderColor = 'border-green-500';
-      title = 'ELIGIBLE TO VOTE';
-      color = 'text-green-500';
-    } else {
-      borderColor = 'border-red-500';
-      title = 'NOT ELIGIBLE';
-      color = 'text-red-500';
-    }
+  if (eligibility === 'VOTE_CAST_SUCCESS' || eligibility === 'ELIGIBLE') {
+    borderColor = 'border-emerald-500/40';
+    title = 'BALLOT CAST & VERIFIED';
+    titleColor = 'text-emerald-400';
+    Icon = Check;
+  } else if (eligibility === 'ALREADY_VOTED') {
+    borderColor = 'border-amber-500/40';
+    title = 'ALREADY VOTED';
+    titleColor = 'text-amber-400';
+    Icon = Vote;
+  } else if (eligibility === 'NOT ELIGIBLE') {
+    borderColor = 'border-red-500/40';
+    title = 'NOT ELIGIBLE TO VOTE';
+    titleColor = 'text-red-400';
+    Icon = ShieldAlert;
   }
 
   return (
-    <div className={`w-full max-w-md border ${borderColor} bg-gray-900 rounded-2xl p-6 shadow-2xl flex flex-col items-center text-center space-y-4`}>
-      <h2 className={`text-2xl font-black tracking-widest ${color}`}>{title}</h2>
+    <div className={`w-full max-w-md border ${borderColor} bg-zinc-900/90 rounded-xl p-6 shadow-lg flex flex-col items-center text-center space-y-4`}>
       
-      {isRegistered && (
-        <div className="w-full text-left bg-black p-4 rounded-lg border border-gray-800 space-y-2">
-          <div className="flex justify-between">
-            <span className="text-gray-500">Name:</span>
-            <span className="font-semibold text-white">{result.data.name}</span>
+      {/* Icon Badge */}
+      <div className="w-12 h-12 rounded-full bg-zinc-950 border border-zinc-800 flex items-center justify-center">
+        <Icon className={`w-6 h-6 ${titleColor}`} />
+      </div>
+
+      {/* Main Status Header */}
+      <div className="space-y-1">
+        <h2 className={`text-base font-semibold tracking-wide ${titleColor}`}>
+          {title}
+        </h2>
+        {data.message && (
+          <p className="text-xs text-zinc-400 max-w-xs mx-auto">
+            {data.message}
+          </p>
+        )}
+      </div>
+
+      {/* Voter Profile Details Box */}
+      {data.voter_id && (
+        <div className="w-full text-left bg-zinc-950 border border-zinc-800 p-4 rounded-lg space-y-2 font-mono text-xs text-zinc-300">
+          <div className="flex justify-between items-center border-b border-zinc-900 pb-2">
+            <span className="text-zinc-500">Legal Name</span>
+            <span className="font-semibold text-white">{data.name}</span>
           </div>
-          <div className="flex justify-between">
-            <span className="text-gray-500">Voter ID:</span>
-            <span className="font-mono text-white">{result.data.voter_id}</span>
+
+          <div className="flex justify-between items-center border-b border-zinc-900 pb-2">
+            <span className="text-zinc-500">Voter ID</span>
+            <span className="font-semibold text-zinc-200">{data.voter_id}</span>
           </div>
+
+          {data.voted_at && (
+            <div className="flex justify-between items-center text-amber-400 pt-1">
+              <span className="text-zinc-500 flex items-center gap-1">
+                <Clock className="w-3 h-3 text-amber-400" /> Recorded At
+              </span>
+              <span>{new Date(data.voted_at).toLocaleTimeString()}</span>
+            </div>
+          )}
         </div>
       )}
 
-      {result.data?.similarity && (
-        <div className="text-xs text-gray-500 font-mono flex gap-4 mt-4">
-          <span>Match: {(result.data.similarity * 100).toFixed(1)}%</span>
-          <span>Time: {result.data.processing_time_ms}ms</span>
+      {/* Biometric Confidence Stats */}
+      {data.similarity !== undefined && data.similarity > 0 && (
+        <div className="text-[11px] text-zinc-500 font-mono flex items-center justify-between w-full pt-2 border-t border-zinc-800/80">
+          <span>Match: {(data.similarity * 100).toFixed(1)}%</span>
+          <span>Latency: {data.processing_time_ms}ms</span>
         </div>
       )}
 
-      <button onClick={onReset} className="mt-6 w-full py-3 border border-gray-700 hover:bg-gray-800 rounded-xl transition text-sm">
-        Scan Again
+      <button 
+        onClick={onReset} 
+        className="w-full py-3 bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 text-white font-medium rounded-lg text-xs transition"
+      >
+        Scan Next Voter
       </button>
     </div>
   );
