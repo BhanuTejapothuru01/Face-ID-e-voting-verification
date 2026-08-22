@@ -150,7 +150,7 @@ def get_all_sessions_api(admin: bool = Depends(get_current_admin)):
     for s in sessions:
         results = get_session_results(s['session_id'])
         total_votes_in_session = sum(r.get('vote_count', 0) for r in results)
-        turnout = round((total_votes_in_session / total_voters * 100), 1) if total_voters > 0 else 0
+        turnout = min(100.0, round((total_votes_in_session / total_voters * 100), 1)) if total_voters > 0 else 0.0
         
         annotated.append({
             **s,

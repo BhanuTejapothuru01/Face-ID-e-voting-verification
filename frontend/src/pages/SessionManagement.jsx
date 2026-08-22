@@ -318,9 +318,10 @@ export default function SessionManagement() {
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {sessions.map((s) => {
-                    const totalVoters = s.total_registered_voters || 1200;
-                    const votesCast = s.votes_cast || (s.status === 'ACTIVE' ? 743 : s.status === 'ENDED' ? 600 : 0);
-                    const turnout = s.participation_percentage || (totalVoters > 0 ? ((votesCast / totalVoters) * 100).toFixed(1) : 0);
+                    const totalVoters = s.total_registered_voters !== undefined ? s.total_registered_voters : (voters ? voters.length : 0);
+                    const votesCast = s.votes_cast !== undefined ? s.votes_cast : 0;
+                    const rawTurnout = s.participation_percentage !== undefined ? s.participation_percentage : (totalVoters > 0 ? (votesCast / totalVoters) * 100 : 0);
+                    const turnout = Math.min(100, Math.max(0, Number(rawTurnout))).toFixed(1);
 
                     return (
                       <tr key={s.session_id} className="hover:bg-slate-50/80 transition-colors">
@@ -353,7 +354,7 @@ export default function SessionManagement() {
                           <div className="flex items-center gap-2">
                             <span className="text-slate-900 text-xs font-semibold">{turnout}%</span>
                             <div className="w-20 bg-slate-100 h-1.5 rounded-full overflow-hidden border border-slate-200">
-                              <div className="bg-emerald-500 h-full rounded-full" style={{ width: `${turnout}%` }} />
+                              <div className="bg-emerald-500 h-full rounded-full" style={{ width: `${Math.min(100, turnout)}%` }} />
                             </div>
                           </div>
                         </td>
