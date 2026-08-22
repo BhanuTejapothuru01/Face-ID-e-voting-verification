@@ -11,7 +11,8 @@ from app.services.face.liveness import check_liveness
 from app.services.faiss_search import search_index
 from app.db.local_db import (
     get_voter_by_uuid, get_active_session, get_candidates_by_session, 
-    submit_voter_ballot, get_all_sessions, get_session_by_id
+    submit_voter_ballot, get_all_sessions, get_session_by_id,
+    get_voter_vote_for_session
 )
 from app.core.config import SIMILARITY_THRESHOLD, ADMIN_SECRET
 from app.api.routes.registration import decode_image
@@ -131,14 +132,17 @@ async def verify_face_lock(request: Request, frames: List[UploadFile] = File(...
                 "name": voter_data['name']
             }
 
-        # Check Duplicate Voting
-        if voter_data.get('has_voted') == 1:
+        # Check Duplicate Voting strictly for THIS active session
+        session_vote = get_voter_vote_for_session(session['session_id'], voter_data['voter_id'])
+        if session_vote is not None:
             return {
                 "status": "ALREADY_VOTED",
-                "message": "You have already voted in this voting session.",
+                "message": f"You have already voted in '{session.get('title', 'this session')}'.",
                 "voter_id": voter_data['voter_id'],
                 "name": voter_data['name'],
-                "voted_at": voter_data.get('voted_at')
+                "session_id": session['session_id'],
+                "session_title": session.get('title', ''),
+                "voted_at": session_vote.get('cast_at')
             }
 
         # Voter is ELIGIBLE & HAS NOT VOTED -> Generate Vote Token
@@ -181,9 +185,9 @@ def cast_ballot_vote_api(req: CastVoteRequest):
     except jwt.PyJWTError:
         raise HTTPException(status_code=401, detail="Invalid or forged vote authorization token.")
 
-    # Check active session matches
-    active_session = get_active_session()
-    if not active_session or active_session['session_id'] != session_id:
+    # Check target session exists and is active
+    session_data = get_session_by_id(session_id)
+    if not session_data or session_data.get('status') not in ['ACTIVE', 'SCHEDULED']:
         raise HTTPException(status_code=400, detail="Voting session is no longer active.")
 
     # Submit vote with DB unique constraint

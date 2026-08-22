@@ -94,7 +94,7 @@ def init_db():
             UNIQUE(session_id, voter_id)
         )
     ''')
-    c.execute('CREATE INDEX IF NOT EXISTS idx_votes_session_voter ON votes(session_id, voter_id)')
+    c.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_session_voter ON votes(session_id, voter_id)')
 
     # Ensure candidate_id column exists
     c.execute("PRAGMA table_info(votes)")
@@ -191,16 +191,42 @@ def get_voter_by_uuid(uuid: str):
     conn.close()
     return _row_to_dict(row)
 
-def get_all_voters(include_embeddings: bool = False):
-    """Get all voters (omitting embeddings by default)."""
+def get_voter_vote_for_session(session_id: str, voter_id: str):
+    """Check if a voter has cast a ballot in a specific session."""
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("SELECT * FROM votes WHERE session_id = ? AND voter_id = ?", (session_id, voter_id))
+    row = c.fetchone()
+    conn.close()
+    return _row_to_dict(row) if row else None
+
+def get_all_voters(session_id: str = None, include_embeddings: bool = False):
+    """Get all voters with session-scoped voting status."""
     conn = get_connection()
     c = conn.cursor()
     
-    if include_embeddings:
-        c.execute("SELECT * FROM voters")
+    target_session = session_id
+    if not target_session:
+        active = get_active_session()
+        if active:
+            target_session = active['session_id']
+
+    if target_session:
+        query = f'''
+            SELECT v.id, v.voter_id, v.name, v.eligibility_status, v.created_at, v.updated_at,
+                   CASE WHEN vt.id IS NOT NULL THEN 1 ELSE 0 END as has_voted,
+                   vt.cast_at as voted_at, vt.session_id as voted_session_id
+                   {", v.face_embedding" if include_embeddings else ""}
+            FROM voters v
+            LEFT JOIN votes vt ON v.voter_id = vt.voter_id AND vt.session_id = ?
+        '''
+        c.execute(query, (target_session,))
     else:
-        c.execute("SELECT id, voter_id, name, eligibility_status, has_voted, voted_at, voted_session_id, created_at, updated_at FROM voters")
-        
+        if include_embeddings:
+            c.execute("SELECT * FROM voters")
+        else:
+            c.execute("SELECT id, voter_id, name, eligibility_status, 0 as has_voted, NULL as voted_at, NULL as voted_session_id, created_at, updated_at FROM voters")
+
     rows = c.fetchall()
     conn.close()
     return [_row_to_dict(r) for r in rows]
@@ -394,17 +420,17 @@ def submit_voter_ballot(session_id: str, voter_id: str, candidate_id: str):
             VALUES (?, ?, ?, ?)
         ''', (session_id, voter_id, candidate_id, now_iso))
         
-        # 2. Update voter status
+        # 2. Touch updated_at timestamp on voter record (without modifying global has_voted)
         c.execute('''
-            UPDATE voters SET has_voted = 1, voted_at = ?, voted_session_id = ?, updated_at = ?
+            UPDATE voters SET updated_at = ?
             WHERE voter_id = ?
-        ''', (now_iso, session_id, now_iso, voter_id))
+        ''', (now_iso, voter_id))
         
         conn.commit()
         return True, "Vote successfully recorded."
     except sqlite3.IntegrityError:
         conn.rollback()
-        return False, "DUPLICATE VOTE REJECTED: Voter has already cast a ballot in this session."
+        return False, "DUPLICATE VOTE REJECTED: You have already cast a ballot in this session."
     except Exception as e:
         conn.rollback()
         return False, f"Vote error: {str(e)}"
@@ -429,26 +455,33 @@ def get_session_results(session_id: str):
     conn.close()
     return [_row_to_dict(r) for r in rows]
 
-def reset_voter_ballot(voter_id: str):
-    """Reset an individual voter's ballot status."""
+def reset_voter_ballot(voter_id: str, session_id: str = None):
+    """Reset an individual voter's ballot status for a session."""
     conn = get_connection()
     c = conn.cursor()
-    c.execute('''
-        UPDATE voters SET has_voted = 0, voted_at = NULL, voted_session_id = NULL
-        WHERE voter_id = ?
-    ''', (voter_id,))
-    c.execute("DELETE FROM votes WHERE voter_id = ?", (voter_id,))
+    target_session = session_id or (get_active_session() or {}).get('session_id')
+    
+    if target_session:
+        c.execute("DELETE FROM votes WHERE voter_id = ? AND session_id = ?", (voter_id, target_session))
+    else:
+        c.execute("DELETE FROM votes WHERE voter_id = ?", (voter_id,))
+        
     conn.commit()
     rows = c.rowcount
     conn.close()
     return rows > 0
 
-def reset_all_ballots():
-    """Reset all voters' ballot status."""
+def reset_all_ballots(session_id: str = None):
+    """Reset all voters' ballot status for a session."""
     conn = get_connection()
     c = conn.cursor()
-    c.execute("UPDATE voters SET has_voted = 0, voted_at = NULL, voted_session_id = NULL")
-    c.execute("DELETE FROM votes")
+    target_session = session_id or (get_active_session() or {}).get('session_id')
+    
+    if target_session:
+        c.execute("DELETE FROM votes WHERE session_id = ?", (target_session,))
+    else:
+        c.execute("DELETE FROM votes")
+        
     conn.commit()
     conn.close()
     return True

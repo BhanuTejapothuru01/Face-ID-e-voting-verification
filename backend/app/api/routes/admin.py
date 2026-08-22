@@ -80,8 +80,8 @@ def login_admin(req: LoginRequest):
     return {"token": token}
 
 @router.get("/api/voters")
-def list_voters(admin: bool = Depends(get_current_admin)):
-    voters = get_all_voters(include_embeddings=False)
+def list_voters(session_id: Optional[str] = None, admin: bool = Depends(get_current_admin)):
+    voters = get_all_voters(session_id=session_id, include_embeddings=False)
     return {"voters": voters}
 
 @router.get("/api/voters/{voter_id}")
