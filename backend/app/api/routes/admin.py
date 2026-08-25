@@ -183,7 +183,7 @@ def create_session_api(req: CreateSessionRequest, admin: bool = Depends(get_curr
 
 @router.post("/api/admin/session/toggle")
 def toggle_session_api(req: SessionToggleRequest, admin: bool = Depends(get_current_admin)):
-    if req.status not in ["DRAFT", "SCHEDULED", "ACTIVE", "ENDED", "CANCELLED"]:
+    if req.status not in ["DRAFT", "SCHEDULED", "ACTIVE", "PAUSED", "ENDED", "COMPLETED", "CANCELLED"]:
         raise HTTPException(status_code=400, detail="Invalid session status.")
     session = get_active_session()
     if not session:
@@ -195,6 +195,40 @@ def toggle_session_api(req: SessionToggleRequest, admin: bool = Depends(get_curr
             
     set_session_status(session['session_id'], req.status)
     return {"status": "success", "new_status": req.status}
+
+@router.post("/api/admin/sessions/{session_id}/status")
+def update_specific_session_status_api(session_id: str, req: SessionToggleRequest, admin: bool = Depends(get_current_admin)):
+    if req.status not in ["DRAFT", "SCHEDULED", "ACTIVE", "PAUSED", "ENDED", "COMPLETED", "CANCELLED"]:
+        raise HTTPException(status_code=400, detail="Invalid session status.")
+    session = get_session_by_id(session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found.")
+    set_session_status(session_id, req.status)
+    return {"status": "success", "session_id": session_id, "new_status": req.status}
+
+@router.get("/api/admin/sessions/{session_id}")
+def get_session_detail_api(session_id: str, admin: bool = Depends(get_current_admin)):
+    session = get_session_by_id(session_id)
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found.")
+    
+    voters = get_all_voters(include_embeddings=False)
+    total_voters = len(voters)
+    results = get_session_results(session_id)
+    candidates = get_candidates_by_session(session_id)
+    votes_cast = sum(r.get('vote_count', 0) for r in results)
+    remaining = max(0, total_voters - votes_cast)
+    turnout = min(100.0, round((votes_cast / total_voters * 100), 1)) if total_voters > 0 else 0.0
+
+    return {
+        "session": session,
+        "total_registered_voters": total_voters,
+        "votes_cast": votes_cast,
+        "remaining": remaining,
+        "participation_percentage": turnout,
+        "candidates": candidates,
+        "results": results
+    }
 
 @router.post("/api/admin/sessions/{session_id}/candidates")
 def add_candidate_api(session_id: str, cand: CandidateInput, admin: bool = Depends(get_current_admin)):

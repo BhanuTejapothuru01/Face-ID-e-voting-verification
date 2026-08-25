@@ -1,5 +1,5 @@
 import React from 'react';
-import { Shield, Command, LogOut, CheckCircle2, SlidersHorizontal, Users, Vote, Calendar, Activity, ChevronRight } from 'lucide-react';
+import { Shield, Command, LogOut, SlidersHorizontal, Users, Vote, Calendar, Activity } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export default function DashboardNavbar({ activeTab, setActiveTab, voterCount, onLogout }) {

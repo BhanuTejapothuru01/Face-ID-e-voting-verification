@@ -21,6 +21,7 @@ function App() {
         <Route path="/vote" element={<VoterTerminal />} />
         <Route path="/vote/ballot" element={<Ballot />} />
         <Route path="/vote/success" element={<VoteSuccess />} />
+        <Route path="/vote/:shareToken" element={<VoterTerminal />} />
       </Routes>
     </Router>
   );

@@ -2,6 +2,7 @@ import sqlite3
 import json
 import uuid
 import os
+import secrets
 from datetime import datetime, timezone
 
 DB_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'voters.db')
@@ -10,6 +11,10 @@ def get_connection():
     conn = sqlite3.connect(DB_FILE)
     conn.row_factory = sqlite3.Row
     return conn
+
+def generate_share_token():
+    """Generate a 10-character secure unique share token."""
+    return secrets.token_hex(5)
 
 def init_db():
     conn = get_connection()
@@ -46,10 +51,12 @@ def init_db():
         CREATE TABLE IF NOT EXISTS voting_sessions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             session_id TEXT UNIQUE NOT NULL,
+            share_token TEXT UNIQUE,
             title TEXT NOT NULL,
             description TEXT,
             start_time TEXT NOT NULL,
             end_time TEXT NOT NULL,
+            ended_at TEXT,
             status TEXT NOT NULL DEFAULT 'SCHEDULED',
             created_at TEXT NOT NULL,
             updated_at TEXT NOT NULL,
@@ -59,16 +66,27 @@ def init_db():
 
     # Migration for voting_sessions columns if upgrading
     session_cols = [row[1] for row in c.execute("PRAGMA table_info(voting_sessions)").fetchall()]
+    if 'share_token' not in session_cols:
+        c.execute('ALTER TABLE voting_sessions ADD COLUMN share_token TEXT')
+        c.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_voting_sessions_share_token ON voting_sessions(share_token)')
     if 'description' not in session_cols:
         c.execute('ALTER TABLE voting_sessions ADD COLUMN description TEXT')
     if 'start_time' not in session_cols:
         c.execute("ALTER TABLE voting_sessions ADD COLUMN start_time TEXT DEFAULT ''")
     if 'end_time' not in session_cols:
         c.execute("ALTER TABLE voting_sessions ADD COLUMN end_time TEXT DEFAULT ''")
+    if 'ended_at' not in session_cols:
+        c.execute("ALTER TABLE voting_sessions ADD COLUMN ended_at TEXT")
     if 'created_by' not in session_cols:
         c.execute("ALTER TABLE voting_sessions ADD COLUMN created_by TEXT DEFAULT 'admin'")
     if 'updated_at' not in session_cols:
         c.execute("ALTER TABLE voting_sessions ADD COLUMN updated_at TEXT DEFAULT ''")
+
+    # Backfill share_token for existing sessions missing it
+    rows_without_token = c.execute("SELECT session_id FROM voting_sessions WHERE share_token IS NULL OR share_token = ''").fetchall()
+    for row in rows_without_token:
+        st = generate_share_token()
+        c.execute("UPDATE voting_sessions SET share_token = ? WHERE session_id = ?", (st, row['session_id']))
 
     # 3. Candidates Table
     c.execute('''
@@ -118,11 +136,12 @@ def _seed_default_session_and_candidates():
         start_iso = now.isoformat()
         end_iso = "2099-12-31T23:59:59"
         session_id = f"SESSION-{now.strftime('%Y%m%d')}-001"
+        share_token = generate_share_token()
         
         c.execute('''
-            INSERT INTO voting_sessions (session_id, title, description, start_time, end_time, status, created_at, updated_at, created_by)
-            VALUES (?, ?, ?, ?, ?, 'ACTIVE', ?, ?, 'admin')
-        ''', (session_id, 'Student Council Election 2026', 'Official electronic election for student leadership', start_iso, end_iso, start_iso, start_iso))
+            INSERT INTO voting_sessions (session_id, share_token, title, description, start_time, end_time, status, created_at, updated_at, created_by)
+            VALUES (?, ?, ?, ?, ?, ?, 'ACTIVE', ?, ?, 'admin')
+        ''', (session_id, share_token, 'Student Council Election 2026', 'Official electronic election for student leadership', start_iso, end_iso, start_iso, start_iso))
         
         # Seed candidates for default session
         candidates_data = [
@@ -324,6 +343,16 @@ def get_session_by_id(session_id: str):
     conn.close()
     return _row_to_dict(row)
 
+def get_session_by_share_token(share_token: str):
+    """Retrieve session by unique share_token."""
+    update_session_statuses_by_time()
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute("SELECT * FROM voting_sessions WHERE share_token = ?", (share_token,))
+    row = c.fetchone()
+    conn.close()
+    return _row_to_dict(row)
+
 def create_full_session(title: str, description: str, start_time: str, end_time: str, candidates_list: list = None):
     """Create a new voting session and assign candidates."""
     conn = get_connection()
@@ -332,6 +361,7 @@ def create_full_session(title: str, description: str, start_time: str, end_time:
     
     count = c.execute("SELECT COUNT(*) FROM voting_sessions").fetchone()[0] + 1
     session_id = f"SESSION-{datetime.now(timezone.utc).strftime('%Y%m%d')}-{count:03d}"
+    share_token = generate_share_token()
     
     # Determine initial status
     initial_status = 'SCHEDULED'
@@ -341,9 +371,9 @@ def create_full_session(title: str, description: str, start_time: str, end_time:
         initial_status = 'ENDED'
 
     c.execute('''
-        INSERT INTO voting_sessions (session_id, title, description, start_time, end_time, status, created_at, updated_at, created_by)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'admin')
-    ''', (session_id, title, description, start_time, end_time, initial_status, now_iso, now_iso))
+        INSERT INTO voting_sessions (session_id, share_token, title, description, start_time, end_time, status, created_at, updated_at, created_by)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'admin')
+    ''', (session_id, share_token, title, description, start_time, end_time, initial_status, now_iso, now_iso))
 
     # Add candidates
     if candidates_list:

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Activity, ShieldCheck, UserPlus, Clock, CheckCircle2, XCircle } from 'lucide-react';
+import { Activity, Clock } from 'lucide-react';
 
 export default function ActivityLogs({ logs = [] }) {
   const getBadgeStyle = (type) => {

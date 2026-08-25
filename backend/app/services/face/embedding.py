@@ -1,5 +1,4 @@
 import numpy as np
-from app.services.face.detector import get_face_app
 
 def generate_embedding_from_face(face) -> np.ndarray:
     """

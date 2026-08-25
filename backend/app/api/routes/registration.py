@@ -2,7 +2,6 @@ import cv2
 import numpy as np
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException
 from typing import List
-import time
 import uuid
 
 from app.services.face.detector import detect_faces, check_exactly_one_face, check_face_quality

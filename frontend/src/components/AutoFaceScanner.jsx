@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Camera from './Camera';
 import { Shield, CheckCircle2 } from 'lucide-react';
 
-export default function AutoFaceScanner({ sessionTitle, onVerified }) {
+export default function AutoFaceScanner({ sessionTitle, sessionId, shareToken, onVerified }) {
   // State Machine: CAMERA_STARTING, SEARCHING_FACE, FACE_DETECTED, FACE_LOCKING, FACE_LOCKED, IDENTITY_VERIFIED, ALREADY_VOTED, UNKNOWN_FACE, MULTIPLE_FACES, LOW_QUALITY
   const [scannerState, setScannerState] = useState('CAMERA_STARTING');
   const [statusMessage, setStatusMessage] = useState('Initializing camera stream...');
@@ -37,6 +37,8 @@ export default function AutoFaceScanner({ sessionTitle, onVerified }) {
 
         const formData = new FormData();
         formData.append('frames', frameBlob, 'frame.jpg');
+        if (sessionId) formData.append('session_id', sessionId);
+        if (shareToken) formData.append('share_token', shareToken);
 
         const res = await fetch('http://localhost:8000/api/voting/verify-face-lock', {
           method: 'POST',

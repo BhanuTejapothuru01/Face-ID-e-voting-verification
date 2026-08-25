@@ -1,206 +1,180 @@
-# Face-ID E-Voting Verification
+# FaceVote Engine v2.0 &ndash; Face-ID E-Voting Verification
 
-A real-time biometric voter eligibility verification terminal. It captures live camera feed, verifies liveness, extracts facial embeddings using InsightFace, and matches voters against stored embeddings via FAISS vector search to confirm eligibility before voting.
+[![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688.svg)](https://fastapi.tiangolo.com/)
+[![React 19](https://img.shields.io/badge/Frontend-React%2019-61DAFB.svg)](https://react.dev/)
+[![InsightFace](https://img.shields.io/badge/Biometrics-InsightFace%20(512D)-FF6F00.svg)](https://github.com/deepinsight/insightface)
+[![FAISS](https://img.shields.io/badge/Vector%20DB-FAISS-0467DF.svg)](https://github.com/facebookresearch/faiss)
+[![SQLite](https://img.shields.io/badge/Database-SQLite-003B57.svg)](https://www.sqlite.org/)
 
----
-
-## Tech Stack
-
-- **Frontend**: React 19 + Vite + Tailwind CSS
-- **Backend**: FastAPI (Python)
-- **Face Recognition**: InsightFace (`buffalo_l`) + OpenCV
-- **Vector Search**: FAISS (`faiss-cpu`)
-- **Database**: SQLite (`voters.db`)
+FaceVote is a real-time biometric voter eligibility verification and e-voting terminal. It captures live camera feeds, performs anti-spoofing micro-movement liveness detection, extracts 512-dimensional facial embeddings via **InsightFace (`buffalo_l`)**, and matches voters against an in-memory **FAISS vector index** to enforce strict **one person, one vote** session eligibility.
 
 ---
 
-## Requirements
+## 🌟 Key Features
 
-### Install these first:
+- **Hands-Free Biometric Face Lock**: Automatic continuous frame scanning reticle for instant voter recognition.
+- **Anti-Spoofing Liveness Guard**: Texture and movement variance verification to prevent static photo spoofing.
+- **FAISS 512D Vector Search**: Ultra-fast cosine similarity matching for duplicate face prevention during registration & voting.
+- **Session-Based Election Management**: Create, schedule, pause, resume, or close election sessions with shareable kiosk links.
+- **Executive Admin Command Center**: Live participation telemetry, real-time turnout charts, candidate management, and audit logs.
+- **Secure Candidate Ballot**: Time-limited JWT vote authorization tokens ensuring voters can only submit one ballot per active session.
+
+---
+
+## 🛠️ Tech Stack
+
+| Layer | Technology |
+| :--- | :--- |
+| **Frontend** | React 19, Vite, Tailwind CSS, Lucide Icons, React Router DOM |
+| **Backend API** | Python 3.11+, FastAPI, Uvicorn, SlowAPI (Rate Limiter), PyJWT |
+| **Biometrics** | InsightFace (`buffalo_l`), OpenCV, ONNXRuntime |
+| **Vector DB** | FAISS (`faiss-cpu`) |
+| **Relational DB** | SQLite (`app/db/voters.db`) |
+
+---
+
+## 📋 Prerequisites
+
+Ensure you have the following installed on your system:
+
 1. **Git**: Version 2.x+
 2. **Python**: **3.11** (strongly recommended for prebuilt wheel compatibility)
-3. **Node.js**: **20 LTS** (or 18+) & npm
-4. **Web Browser**: Chrome / Edge / Brave / Firefox
-5. **Hardware**: Functional HD webcam
+3. **Node.js**: **20 LTS** (or 18+) & `npm`
+4. **Hardware**: Functional webcam
 
 ---
 
-## Install Git
+## 🚀 Quick Start Guide
 
-- **Windows**: Download and run the installer from [git-scm.com](https://git-scm.com/download/win).
-- **macOS**: Installed automatically with Xcode Command Line Tools, or run `brew install git`.
-- **Linux**: Run `sudo apt install git` (Ubuntu/Debian) or `sudo dnf install git` (Fedora).
-
----
-
-## Install Python
-
-1. Download **Python 3.11** from [python.org/downloads](https://www.python.org/downloads/).
-2. **IMPORTANT (Windows)**: Check the box **"Add python.exe to PATH"** during installation.
-3. Verify in your terminal:
-   ```bash
-   python --version   # or python3 --version
-   ```
-
----
-
-## Install Node.js
-
-1. Download **Node.js 20 (LTS)** from [nodejs.org](https://nodejs.org/).
-2. Verify in your terminal:
-   ```bash
-   node --version
-   npm --version
-   ```
-
----
-
-## Install / Clone the Project
+### 1. Clone Repository
 
 ```bash
 git clone https://github.com/BhanuTejapothuru01/Face-ID-e-voting-verification.git
 cd Face-ID-e-voting-verification
 ```
 
----
+### 2. Environment Setup
 
-## Environment File
+Create `.env` file from `.env.example`:
 
-Create a local `.env` file from `.env.example` in the project root:
+**macOS / Linux:**
+```bash
+cp .env.example .env
+```
 
-- **Windows PowerShell**: `Copy-Item .env.example .env`
-- **Windows CMD**: `copy .env.example .env`
-- **macOS / Linux**: `cp .env.example .env`
+**Windows PowerShell:**
+```powershell
+Copy-Item .env.example .env
+```
 
-**Contents of `.env`:**
+Default contents of `backend/.env`:
 ```env
-ADMIN_SECRET=your_admin_secret
+ADMIN_SECRET=602142
 SIMILARITY_THRESHOLD=0.4
 ```
-*Note: Do not commit `.env` to GitHub.*
 
 ---
 
-## Backend Setup
+### 3. Backend Installation & Run
 
-### Windows PowerShell
-```powershell
-cd backend
-py -3.11 -m venv venv
-.\venv\Scripts\Activate.ps1
-pip install --upgrade pip
-pip install -r requirements.txt
-uvicorn app.main:app --reload
-```
-
-### macOS / Linux
+#### macOS / Linux:
 ```bash
 cd backend
 python3.11 -m venv venv
 source venv/bin/activate
 pip install --upgrade pip
 pip install -r requirements.txt
-uvicorn app.main:app --reload
+PYTHONPATH=. uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
-*The backend starts at `http://localhost:8000`.*
+#### Windows PowerShell:
+```powershell
+cd backend
+py -3.11 -m venv venv
+.\venv\Scripts\Activate.ps1
+pip install --upgrade pip
+pip install -r requirements.txt
+$env:PYTHONPATH="."
+uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+```
+
+> **Note on First Run**: On initial startup, InsightFace automatically downloads the `buffalo_l` model weights (~200MB). Subsequent runs load directly from local cache.
 
 ---
 
-## Frontend Setup
+### 4. Frontend Installation & Run
 
-Open a **NEW terminal window** (keep the backend running):
+Open a **new terminal window** in the project root:
 
 ```bash
-cd Face-ID-e-voting-verification/frontend
+cd frontend
 npm install
 npm run dev
 ```
 
-*The frontend starts at `http://localhost:5173`.*
+The frontend client will open at **[http://localhost:5173](http://localhost:5173)**.
 
 ---
 
-## Run the Project
+### 5. Convenient One-Command Runners
 
-Run both servers simultaneously in separate terminals:
-
-- **Terminal 1 (Backend)**: `uvicorn app.main:app --reload` (inside `backend/`) -> `http://localhost:8000`
-- **Terminal 2 (Frontend)**: `npm run dev` (inside `frontend/`) -> `http://localhost:5173`
-
-Open `http://localhost:5173` in your browser to access the website.
+From the project root directory:
+- **Start Backend Server**: `npm run start:backend`
+- **Start Frontend Server**: `npm run dev`
 
 ---
 
-## Camera Permission
+## 🔑 Access Points & Admin Credentials
 
-When accessing `/register` or `/verify`, your browser will prompt for camera permission. Click **Allow**. Ensure no other app (Zoom, Teams, Skype) is actively using the webcam.
+- **Main Portal**: [http://localhost:5173/](http://localhost:5173/)
+- **Voter Terminal**: [http://localhost:5173/vote](http://localhost:5173/vote)
+- **Voter Registration**: [http://localhost:5173/register](http://localhost:5173/register)
+- **Admin Dashboard**: [http://localhost:5173/admin](http://localhost:5173/admin)
+  - **Admin Secret Passcode**: `602142`
+- **Session Management**: [http://localhost:5173/admin/sessions](http://localhost:5173/admin/sessions)
 
 ---
 
-## First Run
-
-On the first backend run, InsightFace will automatically download the `buffalo_l` face model (~200 MB) from GitHub/ONNX. An active internet connection is required for this initial download. Subsequent runs load from local cache.
-
----
-
-## Project Structure
+## 🏗️ Project Architecture & Workflow
 
 ```
-Face-ID-e-voting-verification/
-├── backend/
-│   ├── app/
-│   │   ├── api/          # API route endpoints
-│   │   ├── db/           # SQLite database logic (voters.db)
-│   │   ├── services/     # Face processing & FAISS search
-│   │   └── main.py       # FastAPI app entry point
-│   └── requirements.txt
-├── frontend/
-│   ├── src/              # React pages and components
-│   └── package.json
-├── scripts/              # Helper scripts (rebuild_index.py)
-├── .env.example
-├── .gitignore
-└── README.md
+┌─────────────────────────────────────────────────────────┐
+│                      Client Layer                       │
+│  React 19 + Vite + Tailwind CSS (http://localhost:5173) │
+└────────────────────────────┬────────────────────────────┘
+                             │ REST API / Vite Proxy
+┌────────────────────────────▼────────────────────────────┐
+│                      Backend Layer                      │
+│            FastAPI Server (http://localhost:8000)       │
+└───────┬────────────────────┬────────────────────┬───────┘
+        │                    │                    │
+┌───────▼──────┐    ┌────────▼───────┐    ┌───────▼──────┐
+│  OpenCV +    │    │  FAISS Vector  │    │    SQLite    │
+│ InsightFace  │    │  Index (512D)  │    │  Database    │
+│ (buffalo_l)  │    │ (In-Memory IP) │    │ (voters.db)  │
+└──────────────┘    └────────────────┘    └──────────────┘
 ```
+
+1. **Camera Frame Capture**: Frontend streams video feed and captures frame bursts.
+2. **Quality & Liveness Check**: OpenCV analyzes frame variance to verify micro-movements.
+3. **Face Embedding Extraction**: InsightFace outputs normalized 512D facial feature vectors.
+4. **Vector Search**: FAISS searches in-memory inner product index using threshold ($> 0.40$).
+5. **Authorization Token**: Verified voters receive a 5-minute JWT vote token.
+6. **Ballot Casting**: Database records vote under session-specific `UNIQUE(session_id, voter_id)` constraint.
 
 ---
 
-## Architecture
+## 🧪 Helper Scripts
 
-```
-Browser (Webcam)
-   ↓
-React + Vite (http://localhost:5173)
-   ↓
-FastAPI Backend (http://localhost:8000)
-   ↓
-OpenCV + InsightFace (buffalo_l)
-   ↓
-Face Embedding (512D)
-   ↓
-FAISS Vector Search (In-Memory)
-   ↓
-SQLite Database (voters.db)
+### Rebuild FAISS Vector Index from Database
+If the database records are modified out-of-band:
+```bash
+cd backend
+venv/bin/python ../scripts/rebuild_index.py
 ```
 
 ---
 
-## Common Problems
+## 🛡️ License
 
-- **Python not found**: Ensure Python 3.11 is installed and added to your system `PATH`.
-- **Backend doesn't start**: Ensure `venv` is activated, dependencies are installed, and you are inside the `backend/` folder before running `uvicorn app.main:app --reload`.
-- **Frontend doesn't start**: Run `npm install` inside `frontend/` before `npm run dev`.
-- **Camera doesn't work**: Check browser site settings and grant camera access to `localhost`.
-- **Installation error**: Verify you are using Python 3.11 (Python 3.12+ may fail compiling C++ wheels).
-
----
-
-## Quick Start
-
-1. Install Git, Python 3.11, and Node.js 20 LTS.
-2. Clone repository: `git clone https://github.com/BhanuTejapothuru01/Face-ID-e-voting-verification.git`
-3. Navigate to root & create `.env`: `cp .env.example .env`
-4. Setup & start backend: `cd backend && python3.11 -m venv venv && source venv/bin/activate && pip install -r requirements.txt && uvicorn app.main:app --reload`
-5. Open Terminal 2, setup & start frontend: `cd frontend && npm install && npm run dev`
-6. Open `http://localhost:5173` in browser and allow camera access.
+This project is open-source and intended for academic research, biometric demonstration, and educational purposes.

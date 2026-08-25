@@ -1,7 +1,7 @@
 import time
 import jwt
 from datetime import datetime, timezone
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Request, Depends, Header
+from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Request
 from typing import List, Optional
 from pydantic import BaseModel
 
@@ -12,7 +12,7 @@ from app.services.faiss_search import search_index
 from app.db.local_db import (
     get_voter_by_uuid, get_active_session, get_candidates_by_session, 
     submit_voter_ballot, get_all_sessions, get_session_by_id,
-    get_voter_vote_for_session
+    get_voter_vote_for_session, get_session_by_share_token
 )
 from app.core.config import SIMILARITY_THRESHOLD, ADMIN_SECRET
 from app.api.routes.registration import decode_image
@@ -27,6 +27,57 @@ VOTE_TOKEN_SECRET = ADMIN_SECRET if ADMIN_SECRET else "vote_token_secret_key_123
 class CastVoteRequest(BaseModel):
     vote_token: str
     candidate_id: str
+
+@router.get("/api/voting/session-by-token/{share_token}")
+def get_voting_session_by_token(share_token: str):
+    """Retrieve session by unique share_token and return status + candidates."""
+    session = get_session_by_share_token(share_token)
+    if not session:
+        return {
+            "status": "NOT_FOUND",
+            "message": "Voting Session Not Found. This voting link is invalid or no longer available.",
+            "session": None,
+            "candidates": []
+        }
+    
+    candidates = get_candidates_by_session(session['session_id'])
+    status = session.get('status', 'SCHEDULED')
+    
+    if status == 'SCHEDULED':
+        return {
+            "status": "SCHEDULED",
+            "message": "Voting Has Not Started",
+            "session": session,
+            "candidates": candidates
+        }
+    elif status in ['ENDED', 'COMPLETED']:
+        return {
+            "status": "ENDED",
+            "message": "Voting Has Ended",
+            "session": session,
+            "candidates": candidates
+        }
+    elif status == 'PAUSED':
+        return {
+            "status": "PAUSED",
+            "message": "Voting Is Currently Paused",
+            "session": session,
+            "candidates": candidates
+        }
+    elif status == 'ACTIVE':
+        return {
+            "status": "ACTIVE",
+            "message": "Voting Session Active",
+            "session": session,
+            "candidates": candidates
+        }
+    else:
+        return {
+            "status": status,
+            "message": f"Voting Session Status: {status}",
+            "session": session,
+            "candidates": candidates
+        }
 
 @router.get("/api/voting/active-session")
 def get_active_voting_session():
@@ -58,12 +109,25 @@ def get_active_voting_session():
 
 @router.post("/api/voting/verify-face-lock")
 @limiter.limit("10/minute")
-async def verify_face_lock(request: Request, frames: List[UploadFile] = File(...)):
+async def verify_face_lock(
+    request: Request, 
+    frames: List[UploadFile] = File(...),
+    session_id: Optional[str] = Form(None),
+    share_token: Optional[str] = Form(None)
+):
     """Hands-free automatic biometric face lock and verification endpoint."""
     start_time = time.time()
     
-    # 1. Verify Active Session
-    session = get_active_session()
+    # 1. Verify Target Session
+    session = None
+    if share_token:
+        session = get_session_by_share_token(share_token)
+    elif session_id:
+        session = get_session_by_id(session_id)
+        
+    if not session:
+        session = get_active_session()
+
     if not session or session.get('status') != 'ACTIVE':
         raise HTTPException(status_code=400, detail="No active voting session is accepting votes.")
 
