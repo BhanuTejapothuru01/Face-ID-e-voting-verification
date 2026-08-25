@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import FaceScanner from '../components/FaceScanner';
 import ResultCard from '../components/ResultCard';
-import { Link } from 'react-router-dom';
-import { ChevronLeft } from 'lucide-react';
+import { Navbar } from '../components/layout/Navbar';
+import { Footer } from '../components/layout/Footer';
+import { Card } from '../components/ui/Card';
+import { Badge } from '../components/ui/Badge';
+import { ChevronLeft, ShieldCheck } from 'lucide-react';
 
 export default function Verify() {
   const [result, setResult] = useState(null);
@@ -14,23 +18,32 @@ export default function Verify() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 p-6 flex flex-col items-center font-sans">
-      <div className="w-full max-w-md mb-6">
-        <Link to="/" className="text-zinc-500 hover:text-zinc-200 text-xs font-mono flex items-center transition">
-          <ChevronLeft className="w-4 h-4 mr-1" /> Home
-        </Link>
-      </div>
+    <div className="min-h-screen bg-[#050505] text-white flex flex-col justify-between">
+      <Navbar />
 
-      <div className="text-center mb-6 space-y-1">
-        <h1 className="text-xl font-bold tracking-tight text-white">Biometric Verification</h1>
-        <p className="text-zinc-500 text-xs">Scan face to verify voter eligibility and cast single ballot.</p>
-      </div>
+      <main className="max-w-2xl mx-auto px-4 py-12 w-full flex-grow">
+        <div className="mb-6">
+          <Link to="/" className="text-xs text-zinc-400 hover:text-white flex items-center gap-1 transition-colors">
+            <ChevronLeft className="w-4 h-4" /> Return to Home
+          </Link>
+        </div>
 
-      {!result ? (
-        <FaceScanner mode="verify" onResult={handleResult} />
-      ) : (
-        <ResultCard result={result} onReset={() => setResult(null)} />
-      )}
+        <div className="text-center mb-8 space-y-2">
+          <Badge variant="indigo">Biometric Guard</Badge>
+          <h1 className="text-3xl font-extrabold text-white tracking-tight">Identity Verification</h1>
+          <p className="text-xs text-zinc-400">Position face inside reticle for 512D vector matching and liveness check.</p>
+        </div>
+
+        {!result ? (
+          <Card className="p-6">
+            <FaceScanner mode="verify" onResult={handleResult} />
+          </Card>
+        ) : (
+          <ResultCard result={result} onReset={() => setResult(null)} />
+        )}
+      </main>
+
+      <Footer />
     </div>
   );
 }

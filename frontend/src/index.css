@@ -1,37 +1,53 @@
 @import "tailwindcss";
 
-@theme {
-  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
-  --color-indigo-main: #4F46E5;
-  --color-indigo-hover: #4338CA;
-  --color-bg-light: #F8FAFC;
-  --color-card-light: #FFFFFF;
-  --color-border-light: #E2E8F0;
+:root {
+  --bg-app: #050505;
+  --bg-surface: #0D0D0D;
+  --bg-card: #141414;
+  --border-card: #262626;
+  --border-card-hover: #3B82F6;
+  
+  --text-primary: #FFFFFF;
+  --text-secondary: #A1A1AA;
+  --text-muted: #9CA3AF;
+  
+  --color-accent: #6366F1;
+  --color-accent-hover: #4F46E5;
+  --color-success: #22C55E;
+  --color-warning: #F59E0B;
+  --color-error: #EF4444;
+  
+  --font-sans: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
 body {
-  background-color: #F8FAFC;
-  color: #0F172A;
+  background-color: var(--bg-app);
+  color: var(--text-primary);
   font-family: var(--font-sans);
   overflow-x: hidden;
+  min-height: 100vh;
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Custom Light Scrollbar */
+/* Custom Scrollbars */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: #F8FAFC;
+  background: var(--bg-app);
 }
 ::-webkit-scrollbar-thumb {
-  background: #CBD5E1;
-  border-radius: 3px;
+  background: #262626;
+  border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #94A3B8;
+  background: #3F3F46;
 }
 
+/* Biometric Reticle Scanline */
 @keyframes scan-line {
   0% { transform: translateY(-100%); }
   50% { transform: translateY(100%); }
@@ -42,11 +58,37 @@ body {
   animation: scan-line 2.5s ease-in-out infinite;
 }
 
-@keyframes scale-up {
-  0% { transform: scale(0.8); opacity: 0; }
-  100% { transform: scale(1); opacity: 1; }
+/* Doodle SVG Line Draw-In Animation */
+@keyframes sketch-in {
+  0% {
+    stroke-dashoffset: 1000;
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
 }
 
-.animate-scale-up {
-  animation: scale-up 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+.animate-sketch-in {
+  stroke-dasharray: 1000;
+  animation: sketch-in 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-scan-line,
+  .animate-sketch-in {
+    animation: none !important;
+    stroke-dashoffset: 0 !important;
+  }
+}
+
+/* Focus Ring */
+*:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
