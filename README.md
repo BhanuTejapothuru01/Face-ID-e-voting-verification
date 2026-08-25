@@ -77,10 +77,12 @@ SIMILARITY_THRESHOLD=0.4
 
 ### 3. Backend Installation & Run
 
+Make sure you are in the `backend` directory (`cd FaceVote/backend` or `cd backend` if inside `FaceVote`):
+
 #### macOS / Linux:
 ```bash
-cd backend
-python3.11 -m venv venv
+cd FaceVote/backend   # Or 'cd backend' if inside FaceVote directory
+python3 -m venv venv
 source venv/bin/activate
 pip install --upgrade pip
 pip install -r requirements.txt
@@ -89,8 +91,8 @@ PYTHONPATH=. uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 
 #### Windows PowerShell:
 ```powershell
-cd backend
-py -3.11 -m venv venv
+cd FaceVote\backend   # Or 'cd backend' if inside FaceVote directory
+python -m venv venv
 .\venv\Scripts\Activate.ps1
 pip install --upgrade pip
 pip install -r requirements.txt
