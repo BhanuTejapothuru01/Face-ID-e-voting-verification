@@ -2,12 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { Server, Database, Cpu, ShieldCheck } from 'lucide-react';
+import { API_BASE_URL } from '../../config/api';
 
 export function SystemHealthPanel() {
   const [healthStatus, setHealthStatus] = useState('checking');
 
   useEffect(() => {
-    fetch('http://localhost:8000/api/health')
+    fetch(`${API_BASE_URL}/api/health`)
       .then((res) => res.json())
       .then((data) => {
         if (data.status === 'ok') setHealthStatus('online');

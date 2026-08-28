@@ -24,6 +24,7 @@ import {
   KeyRound,
   Shield
 } from 'lucide-react';
+import { API_BASE_URL } from '../config/api';
 
 export default function Home() {
   const [stats, setStats] = useState({
@@ -35,8 +36,8 @@ export default function Home() {
   useEffect(() => {
     // Fetch live counts if available
     Promise.all([
-      fetch('http://localhost:8000/api/voters').then((res) => res.json()).catch(() => null),
-      fetch('http://localhost:8000/api/admin/sessions').then((res) => res.json()).catch(() => null)
+      fetch(`${API_BASE_URL}/api/voters`).then((res) => res.json()).catch(() => null),
+      fetch(`${API_BASE_URL}/api/admin/sessions`).then((res) => res.json()).catch(() => null)
     ]).then(([vData, sData]) => {
       const registered = vData?.voters?.length || 0;
       const votes = vData?.voters?.filter((v) => v.has_voted === 1).length || 0;

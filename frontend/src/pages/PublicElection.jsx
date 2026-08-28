@@ -7,6 +7,7 @@ import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { SketchEmptyBox } from '../components/ui/DoodleAccents';
 import { Vote, Calendar, Clock, UserCheck, ArrowRight, ShieldCheck, AlertCircle } from 'lucide-react';
+import { API_BASE_URL } from '../config/api';
 
 export default function PublicElection() {
   const { sessionId } = useParams();
@@ -15,11 +16,11 @@ export default function PublicElection() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Attempt resolving session by sessionId or shareToken
-    fetch(`http://localhost:8000/api/session/${sessionId}`)
+    // Attempt resolving session by shareToken or sessionId
+    fetch(`${API_BASE_URL}/api/voting/session-by-token/${sessionId}`)
       .then((res) => {
-        if (!res.ok) {
-          return fetch(`http://localhost:8000/api/session/token/${sessionId}`).then((r) => {
+        if (!res.ok || res.status === 404) {
+          return fetch(`${API_BASE_URL}/api/admin/sessions/${sessionId}`).then((r) => {
             if (!r.ok) throw new Error('Election session not found');
             return r.json();
           });

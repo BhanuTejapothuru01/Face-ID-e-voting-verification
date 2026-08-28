@@ -8,6 +8,7 @@ import { Button } from '../components/ui/Button';
 import { CandidateCard } from '../components/voting/CandidateCard';
 import { VoteReviewModal } from '../components/voting/VoteReviewModal';
 import { ShieldCheck, Vote, AlertCircle, ArrowRight } from 'lucide-react';
+import { API_BASE_URL } from '../config/api';
 
 export default function Ballot() {
   const [candidates, setCandidates] = useState([]);
@@ -33,7 +34,7 @@ export default function Ballot() {
     const fetchSessionData = async () => {
       try {
         setLoading(true);
-        const res = await fetch('http://localhost:8000/api/voting/active-session');
+        const res = await fetch(`${API_BASE_URL}/api/voting/active-session`);
         if (!res.ok) throw new Error('Failed to load election candidates.');
         const data = await res.json();
 
@@ -69,7 +70,7 @@ export default function Ballot() {
     setError(null);
 
     try {
-      const res = await fetch('http://localhost:8000/api/voting/cast-vote', {
+      const res = await fetch(`${API_BASE_URL}/api/voting/cast-vote`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

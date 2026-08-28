@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import Camera from './Camera';
 import ScanAnimation from './ScanAnimation';
+import { API_BASE_URL } from '../config/api';
 
 export default function FaceScanner({ mode = 'verify', onResult, voterName = '' }) {
   const [scanState, setScanState] = useState('FINDING');
@@ -41,7 +42,7 @@ export default function FaceScanner({ mode = 'verify', onResult, voterName = '' 
       setScanState('EMBEDDING');
       
       const endpoint = mode === 'register' ? '/api/register' : '/api/verify';
-      const response = await fetch(`http://localhost:8000${endpoint}`, {
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         method: 'POST',
         body: formData
       });

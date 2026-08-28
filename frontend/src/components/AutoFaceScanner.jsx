@@ -5,6 +5,8 @@ import { ShieldCheck, CheckCircle2, AlertTriangle, UserX, CameraOff } from 'luci
 import { Badge } from './ui/Badge';
 import { SketchFaceFrame } from './ui/DoodleAccents';
 
+import { API_BASE_URL } from '../config/api';
+
 export default function AutoFaceScanner({ sessionTitle, sessionId, shareToken, onVerified }) {
   const [scannerState, setScannerState] = useState('CAMERA_STARTING');
   const [statusMessage, setStatusMessage] = useState('Initializing camera stream...');
@@ -43,7 +45,7 @@ export default function AutoFaceScanner({ sessionTitle, sessionId, shareToken, o
         if (sessionId) formData.append('session_id', sessionId);
         if (shareToken) formData.append('share_token', shareToken);
 
-        const res = await fetch('http://localhost:8000/api/voting/verify-face-lock', {
+        const res = await fetch(`${API_BASE_URL}/api/voting/verify-face-lock`, {
           method: 'POST',
           body: formData,
         });

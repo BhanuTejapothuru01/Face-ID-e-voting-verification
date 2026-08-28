@@ -3,8 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "start": "./start.sh",
     "dev": "npm --prefix frontend run dev",
-    "start:backend": "cd backend && PYTHONPATH=. venv/bin/uvicorn app.main:app --port 8000 --reload",
+    "start:backend": "cd backend && venv/bin/python -m uvicorn app.main:app --port 8000 --reload",
     "build": "npm --prefix frontend run build",
     "install-all": "npm --prefix frontend install"
   }

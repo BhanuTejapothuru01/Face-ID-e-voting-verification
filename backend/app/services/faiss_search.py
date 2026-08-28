@@ -19,7 +19,7 @@ def init_faiss_index():
     
     records = get_all_embeddings_for_index()
     if not records:
-        print("FAISS initialization: No voters found in database.")
+        print("FAISS initialization: No voters found in database. Initialized clean empty index.")
         return
         
     embeddings_list = []
@@ -34,7 +34,9 @@ def init_faiss_index():
         # Ensure they are normalized (they should be, but just to be safe)
         faiss.normalize_L2(emb_matrix)
         _index.add(emb_matrix)
-        print(f"FAISS initialization: Loaded {len(embeddings_list)} embeddings.")
+        print(f"FAISS initialization: Loaded {len(embeddings_list)} voter embeddings into live index.")
+    else:
+        print("FAISS initialization: No valid 512D embeddings in database. Initialized clean empty index.")
 
 def add_to_index(uuid: str, embedding: np.ndarray):
     """Adds a single new embedding to the live FAISS index."""

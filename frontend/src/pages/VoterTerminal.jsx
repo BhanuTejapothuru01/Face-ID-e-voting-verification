@@ -17,6 +17,7 @@ import {
   PauseCircle,
   AlertTriangle
 } from 'lucide-react';
+import { API_BASE_URL } from '../config/api';
 
 export default function VoterTerminal() {
   const { shareToken } = useParams();
@@ -30,8 +31,8 @@ export default function VoterTerminal() {
       setLoading(true);
       setError(null);
       const url = shareToken
-        ? `http://localhost:8000/api/voting/session-by-token/${shareToken}`
-        : 'http://localhost:8000/api/voting/active-session';
+        ? `${API_BASE_URL}/api/voting/session-by-token/${shareToken}`
+        : `${API_BASE_URL}/api/voting/active-session`;
 
       const res = await fetch(url);
       if (!res.ok) throw new Error('Failed to load session details.');

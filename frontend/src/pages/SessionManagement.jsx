@@ -19,6 +19,7 @@ import {
   Check,
   X
 } from 'lucide-react';
+import { API_BASE_URL } from '../config/api';
 
 export default function SessionManagement() {
   const [token, setToken] = useState(localStorage.getItem('admin_token'));
@@ -46,7 +47,7 @@ export default function SessionManagement() {
     if (!token) return;
     try {
       setLoading(true);
-      const res = await fetch('http://localhost:8000/api/admin/sessions', {
+      const res = await fetch(`${API_BASE_URL}/api/admin/sessions`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
@@ -73,7 +74,7 @@ export default function SessionManagement() {
 
   const handleToggleStatus = async (sessionId, newStatus) => {
     try {
-      await fetch(`http://localhost:8000/api/admin/sessions/${sessionId}/status`, {
+      await fetch(`${API_BASE_URL}/api/admin/sessions/${sessionId}/status`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -99,7 +100,7 @@ export default function SessionManagement() {
       const startIso = `${startDate}T${startTime}:00`;
       const endIso = `${endDate}T${endTime}:00`;
 
-      const res = await fetch('http://localhost:8000/api/admin/sessions', {
+      const res = await fetch(`${API_BASE_URL}/api/admin/sessions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

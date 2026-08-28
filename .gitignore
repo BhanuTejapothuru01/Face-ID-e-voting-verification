@@ -3,10 +3,13 @@ __pycache__/
 *.py[cod]
 *$py.class
 venv/
+.venv/
 .env
+.env.local
 
 # Node
 node_modules/
+dist/
 .npm
 npm-debug.log
 
@@ -14,5 +17,12 @@ npm-debug.log
 *.db
 *.sqlite3
 
-# OS
+# Model Cache & Local Artifacts
+.insightface/
+scratch/
+
+# OS / Editor
 .DS_Store
+Thumbs.db
+.vscode/
+.idea/

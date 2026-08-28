@@ -20,6 +20,7 @@ import {
   Activity,
   AlertTriangle
 } from 'lucide-react';
+import { API_BASE_URL } from '../config/api';
 
 export default function AdminDashboard() {
   const [password, setPassword] = useState('');
@@ -34,7 +35,7 @@ export default function AdminDashboard() {
     e.preventDefault();
     setError(null);
     try {
-      const res = await fetch('http://localhost:8000/api/admin/login', {
+      const res = await fetch(`${API_BASE_URL}/api/admin/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password }),
@@ -51,9 +52,9 @@ export default function AdminDashboard() {
   const loadData = async (authToken) => {
     try {
       const [vRes, sRes, logRes] = await Promise.all([
-        fetch('http://localhost:8000/api/voters', { headers: { Authorization: `Bearer ${authToken}` } }),
-        fetch('http://localhost:8000/api/admin/stats', { headers: { Authorization: `Bearer ${authToken}` } }),
-        fetch('http://localhost:8000/api/admin/votes', { headers: { Authorization: `Bearer ${authToken}` } }),
+        fetch(`${API_BASE_URL}/api/voters`, { headers: { Authorization: `Bearer ${authToken}` } }),
+        fetch(`${API_BASE_URL}/api/admin/stats`, { headers: { Authorization: `Bearer ${authToken}` } }),
+        fetch(`${API_BASE_URL}/api/admin/votes`, { headers: { Authorization: `Bearer ${authToken}` } }),
       ]);
 
       if (vRes.ok) {
@@ -86,7 +87,7 @@ export default function AdminDashboard() {
 
   const handleResetBallot = async (voterId) => {
     try {
-      await fetch(`http://localhost:8000/api/admin/voters/${voterId}/reset-ballot`, {
+      await fetch(`${API_BASE_URL}/api/voters/${voterId}/reset-vote`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -99,7 +100,7 @@ export default function AdminDashboard() {
   const handleDeleteVoter = async (voterId) => {
     if (!window.confirm('Delete voter profile and vector index?')) return;
     try {
-      await fetch(`http://localhost:8000/api/voters/${voterId}`, {
+      await fetch(`${API_BASE_URL}/api/voters/${voterId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });

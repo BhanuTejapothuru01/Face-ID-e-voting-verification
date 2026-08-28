@@ -9,10 +9,15 @@ _app = None
 def get_face_app():
     global _app
     if _app is None:
-        # We only need 'det' and 'rec' (detection and recognition)
-        # Using CPUExecutionProvider since we installed onnxruntime (CPU) and faiss-cpu
-        _app = FaceAnalysis(name='buffalo_l', allowed_modules=['detection', 'recognition'], providers=['CPUExecutionProvider'])
-        _app.prepare(ctx_id=0, det_size=(640, 640))
+        print("[INFO] Initializing InsightFace 'buffalo_l' model...")
+        print("[INFO] Note: If running for the first time, InsightFace will download model files (~300MB).")
+        try:
+            _app = FaceAnalysis(name='buffalo_l', allowed_modules=['detection', 'recognition'], providers=['CPUExecutionProvider'])
+            _app.prepare(ctx_id=0, det_size=(640, 640))
+            print("[INFO] InsightFace 'buffalo_l' model loaded successfully.")
+        except Exception as e:
+            print(f"[ERROR] Failed to initialize InsightFace model: {e}")
+            raise RuntimeError(f"InsightFace model initialization failed: {e}. Please check your internet connection for the initial download.")
     return _app
 
 def detect_faces(frame: np.ndarray):
