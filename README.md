@@ -16,40 +16,48 @@ Before running FaceVote, ensure your computer has the following software install
 
 ---
 
-## 🚀 Quick Start (One-Command Setup)
+## ⚡ Complete Beginner's Step-by-Step Guide (Automated Setup)
 
-FaceVote includes automated one-click launcher scripts that create the Python virtual environment, install all dependencies, configure environment variables, validate system setup, and launch both backend and frontend servers automatically.
+No manual installation of Python environments, Node modules, or database configurations is required. The launcher script handles all dependency installation automatically!
 
-### 🪟 Windows Setup (Command Prompt or PowerShell)
+### 🪟 On Windows:
 
 1. Open **Command Prompt** (`cmd`) or **PowerShell**.
-2. Clone the repository:
+2. Navigate to your downloaded/cloned project folder:
    ```cmd
-   git clone https://github.com/your-username/Face-ID-e-voting-verification.git
-   cd Face-ID-e-voting-verification
+   cd "C:\path\to\your\Face-ID-e-voting-verification"
    ```
-3. Run the automated Windows launcher:
+3. Run `start.bat`:
    ```cmd
    start.bat
    ```
+   *(Or simply open the project folder in **Windows File Explorer** and double-click **`start.bat`**).*
 
-*(Alternatively, you can double-click `start.bat` in Windows File Explorer).*
+4. **What happens automatically**:
+   * Creates the Python virtual environment (`backend/venv`) if missing.
+   * Installs/upgrades all Python packages (`requirements.txt`) via `pip`.
+   * Installs all frontend packages (`node_modules`) via `npm`.
+   * Generates missing `.env` environment files.
+   * Downloads the InsightFace facial model (`buffalo_l`) on first run.
+   * Starts both the Backend (`http://127.0.0.1:8000`) and Frontend (`http://localhost:5173`) in dedicated windows.
+
+5. Open `http://localhost:5173` in your web browser!
 
 ---
 
-### 🍎 macOS & 🐧 Linux Setup (Terminal)
+### 🍎 On macOS & 🐧 Linux:
 
 1. Open **Terminal**.
-2. Clone the repository:
+2. Navigate to your project folder:
    ```bash
-   git clone https://github.com/your-username/Face-ID-e-voting-verification.git
-   cd Face-ID-e-voting-verification
+   cd /path/to/your/Face-ID-e-voting-verification
    ```
-3. Grant execution permissions and run the launcher:
+3. Run the automated script:
    ```bash
    chmod +x start.sh
    ./start.sh
    ```
+4. Open `http://localhost:5173` in your web browser!
 
 ---
 
