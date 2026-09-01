@@ -117,11 +117,12 @@ ECHO  Swagger API Docs:   http://127.0.0.1:8000/docs
 ECHO ============================================================
 
 :: Start Backend in separate window
-START "FaceVote Backend Server" cmd /k "cd backend && venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload"
+START "FaceVote Backend Server" cmd /k "cd /d "%~dp0backend" && "%~dp0backend\venv\Scripts\python.exe" -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload"
 
 :: Start Frontend in separate window
-START "FaceVote Frontend Portal" cmd /k "cd frontend && npm run dev"
+START "FaceVote Frontend Portal" cmd /k "cd /d "%~dp0frontend" && npm run dev"
 
 ECHO Both servers launched in dedicated windows.
 PAUSE
+
 

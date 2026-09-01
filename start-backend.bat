@@ -21,7 +21,8 @@ IF NOT EXIST "backend\.env" (
 )
 
 ECHO [INFO] Launching FaceVote Backend API on http://127.0.0.1:8000...
-CD backend
-venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+CD /D "%~dp0backend"
+"%~dp0backend\venv\Scripts\python.exe" -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 PAUSE
+
 
