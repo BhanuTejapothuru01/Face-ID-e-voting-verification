@@ -77,60 +77,36 @@ Once the application starts, access the components at the following URLs:
 
 ---
 
-## 🛠️ Manual Step-by-Step Setup (Alternative)
+## 🛠️ VS Code Integrated Terminal Setup (Windows)
 
-If you prefer to start the backend and frontend separately:
+If you are running the project inside **VS Code** on Windows, press `Ctrl + ` ` (or go to `Terminal` -> `New Terminal`) and run these exact commands in two terminal tabs:
 
-### 1. Environment Configuration
-Copy the `.env.example` file to `.env`:
-```bash
-# In project root
-cp .env.example .env
+### 🔹 Terminal 1: Backend API (FastAPI)
 
-# In backend directory
-cp backend/.env.example backend/.env
-
-# In frontend directory
-cp frontend/.env.example frontend/.env
-```
-
-### 2. Backend Setup
-```bash
+```cmd
 cd backend
-
-# Create virtual environment using Python 3.11
-python3.11 -m venv venv
-
-# Activate virtual environment
-# On macOS/Linux:
-source venv/bin/activate
-# On Windows:
-# venv\Scripts\activate
-
-# Install backend dependencies
-pip install --upgrade pip
+py -3.11 -m venv venv || python -m venv venv
+venv\Scripts\activate
+python -m pip install --upgrade pip
 pip install -r requirements.txt
-
-# Run setup validation check
 python check_setup.py
-
-# Start FastAPI backend server
 uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
-### 3. Frontend Setup
-Open a new terminal window:
-```bash
+---
+
+### 🔹 Terminal 2: Frontend Kiosk (React / Vite)
+
+Click **`+`** or **Split Terminal** in VS Code to open a second terminal tab:
+
+```cmd
 cd frontend
-
-# Install Node modules
 npm install
-
-# Start Vite development server
 npm run dev
 ```
 
 ---
+
 
 ## ⚡ Modular Launchers
 
