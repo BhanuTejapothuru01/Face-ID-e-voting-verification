@@ -16,96 +16,55 @@ Before running FaceVote, ensure your computer has the following software install
 
 ---
 
-## ⚡ Complete Beginner's Step-by-Step Guide (Automated Setup)
+## ⚡ One-Command Automatic Setup & Launch
 
-No manual installation of Python environments, Node modules, or database configurations is required. The launcher script handles all dependency installation automatically!
+You **do not** need to manually install Python environments, run pip commands, or install node modules. A single command handles everything automatically!
 
-### 🪟 On Windows:
+### 🪟 Windows (VS Code Terminal / CMD / PowerShell):
 
-1. Open **Command Prompt** (`cmd`) or **PowerShell**.
-2. Navigate to your downloaded/cloned project folder:
-   ```cmd
-   cd "C:\path\to\your\Face-ID-e-voting-verification"
-   ```
-3. Run `start.bat`:
-   ```cmd
-   start.bat
-   ```
-   *(Or simply open the project folder in **Windows File Explorer** and double-click **`start.bat`**).*
-
-4. **What happens automatically**:
-   * Creates the Python virtual environment (`backend/venv`) if missing.
-   * Installs/upgrades all Python packages (`requirements.txt`) via `pip`.
-   * Installs all frontend packages (`node_modules`) via `npm`.
-   * Generates missing `.env` environment files.
-   * Downloads the InsightFace facial model (`buffalo_l`) on first run.
-   * Starts both the Backend (`http://127.0.0.1:8000`) and Frontend (`http://localhost:5173`) in dedicated windows.
-
-5. Open `http://localhost:5173` in your web browser!
-
----
-
-### 🍎 On macOS & 🐧 Linux:
-
-1. Open **Terminal**.
-2. Navigate to your project folder:
-   ```bash
-   cd /path/to/your/Face-ID-e-voting-verification
-   ```
-3. Run the automated script:
-   ```bash
-   chmod +x start.sh
-   ./start.sh
-   ```
-4. Open `http://localhost:5173` in your web browser!
-
----
-
-## 🌐 Application URLs
-
-Once the application starts, access the components at the following URLs:
-
-| Component | URL | Description |
-| :--- | :--- | :--- |
-| 🏠 **Frontend Kiosk** | `http://localhost:5173` | Main Voter & Kiosk Portal |
-| 🗳️ **Voting Terminal** | `http://localhost:5173/vote` | Hands-free facial verification & digital ballot |
-| ⚙️ **Admin Command Center** | `http://localhost:5173/admin` | Real-time turnout, logs & metrics *(Passcode: `602142`)* |
-| 📋 **Session Manager** | `http://localhost:5173/admin/sessions` | Create & publish election sessions |
-| ⚙️ **Backend API** | `http://127.0.0.1:8000` | FastAPI core service |
-| 🔍 **API Health Endpoint** | `http://127.0.0.1:8000/api/health` | System health check JSON endpoint |
-| 📑 **Interactive Swagger Docs** | `http://127.0.0.1:8000/docs` | Interactive API documentation |
-
----
-
-## 🛠️ VS Code Integrated Terminal Setup (Windows)
-
-If you are running the project inside **VS Code** on Windows, press `Ctrl + ` ` (or go to `Terminal` -> `New Terminal`) and run these exact commands in two terminal tabs:
-
-### 🔹 Terminal 1: Backend API (FastAPI)
+Open your terminal in the `FaceVote` directory and run **this single command**:
 
 ```cmd
-cd backend
-py -3.11 -m venv venv || python -m venv venv
-venv\Scripts\activate
-python -m pip install --upgrade pip
-pip install -r requirements.txt
-python check_setup.py
-uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+start.bat
+```
+
+> **What `start.bat` automatically does in one step:**
+> 1. Detects Python 3.11 (`py -3.11`, `py`, `python`).
+> 2. Creates the Python virtual environment (`backend\venv`) if missing.
+> 3. Installs & upgrades all backend dependencies (`requirements.txt`).
+> 4. Generates `.env` config files.
+> 5. Validates setup and downloads AI facial recognition models (`buffalo_l`).
+> 6. Installs all frontend node packages (`node_modules`).
+> 7. Launches both the **Backend API** (`http://127.0.0.1:8000`) and **Frontend Kiosk** (`http://localhost:5173`) in dedicated windows!
+
+---
+
+### 🍎 macOS & 🐧 Linux:
+
+Open your terminal in the `FaceVote` directory and run **this single command**:
+
+```bash
+./start.sh
 ```
 
 ---
 
-### 🔹 Terminal 2: Frontend Kiosk (React / Vite)
+## 🛠️ Alternative: Manual Setup in Two Terminals (Windows)
 
-Click **`+`** or **Split Terminal** in VS Code to open a second terminal tab:
+If you prefer to run the backend and frontend separately in two VS Code terminal tabs:
 
+### 🔹 Terminal 1 (Backend API):
 ```cmd
-cd frontend
-npm install
-npm run dev
+cd backend && py -3.11 -m venv venv && venv\Scripts\activate && pip install -r requirements.txt && python check_setup.py && uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+```
+
+### 🔹 Terminal 2 (Frontend Kiosk):
+```cmd
+cd frontend && npm install && npm run dev
 ```
 
 ---
+
 
 
 ## ⚡ Modular Launchers
