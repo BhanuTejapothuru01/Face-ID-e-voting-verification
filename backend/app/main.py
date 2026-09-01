@@ -18,6 +18,7 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 
+from app.core.config import CORS_ORIGINS
 from app.services.faiss_search import init_faiss_index
 from app.services.face.detector import get_face_app
 from app.api.routes.registration import router as registration_router
@@ -50,10 +51,11 @@ app = FastAPI(title="FaceVote API", lifespan=lifespan)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-# Configure CORS
+# Configure Restricted Production CORS
+cors_list = [origin.strip() for origin in CORS_ORIGINS.split(",") if origin.strip()]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=cors_list,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -67,8 +69,15 @@ app.include_router(voting_router)
 
 @app.get("/api/health")
 def health_check():
+    model_ready = False
+    try:
+        model_ready = get_face_app() is not None
+    except Exception:
+        model_ready = False
+
     return {
         "status": "ok",
-        "python_version": f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}",
-        "message": "FaceVote API is fully operational"
+        "model_loaded": model_ready,
+        "service": "FaceVote API",
+        "version": "1.0.0"
     }

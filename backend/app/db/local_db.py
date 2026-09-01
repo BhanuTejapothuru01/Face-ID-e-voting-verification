@@ -48,6 +48,21 @@ def init_db():
     if 'voted_session_id' not in existing_cols:
         c.execute('ALTER TABLE voters ADD COLUMN voted_session_id TEXT')
 
+    # 1B. Multi-Template Face Embeddings Table
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS face_embeddings (
+            id TEXT PRIMARY KEY,
+            voter_uuid TEXT NOT NULL,
+            voter_id TEXT NOT NULL,
+            face_embedding TEXT NOT NULL,
+            quality_score REAL NOT NULL DEFAULT 1.0,
+            created_at TEXT NOT NULL,
+            FOREIGN KEY (voter_uuid) REFERENCES voters(id) ON DELETE CASCADE
+        )
+    ''')
+    c.execute('CREATE INDEX IF NOT EXISTS idx_face_embeddings_voter ON face_embeddings(voter_uuid)')
+    c.execute('CREATE INDEX IF NOT EXISTS idx_face_embeddings_voter_id ON face_embeddings(voter_id)')
+
     # 2. Voting Sessions Table
     c.execute('''
         CREATE TABLE IF NOT EXISTS voting_sessions (
@@ -279,14 +294,64 @@ def delete_voter(voter_id: str):
     
     return [{'voter_id': voter_id}] if rows_affected > 0 else None
 
-def get_all_embeddings_for_index():
-    """Retrieve all embeddings and voter UUIDs for building the FAISS index."""
+def insert_voter_embeddings(voter_uuid: str, voter_id: str, templates: list[tuple[list[float], float]]):
+    """Inserts multiple face templates for a registered voter."""
     conn = get_connection()
     c = conn.cursor()
-    c.execute("SELECT id, face_embedding FROM voters")
-    rows = c.fetchall()
+    now = datetime.now(timezone.utc).isoformat()
+    
+    rows = []
+    for emb, quality in templates:
+        tmpl_id = str(uuid.uuid4())
+        emb_str = json.dumps(emb)
+        rows.append((tmpl_id, voter_uuid, voter_id, emb_str, float(quality), now))
+        
+    try:
+        c.executemany('''
+            INSERT INTO face_embeddings (id, voter_uuid, voter_id, face_embedding, quality_score, created_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', rows)
+        conn.commit()
+        return True
+    except Exception as e:
+        print(f"DB Error insert_voter_embeddings: {e}")
+        return False
+    finally:
+        conn.close()
+
+def get_all_embeddings_for_index():
+    """
+    Retrieve all embeddings and voter UUIDs for building the FAISS index.
+    Loads from multi-template face_embeddings table AND legacy voters table for backward compatibility.
+    """
+    conn = get_connection()
+    c = conn.cursor()
+    
+    records = []
+    voter_uuids_with_templates = set()
+    
+    # 1. Fetch from multi-template face_embeddings table if available
+    try:
+        c.execute("SELECT voter_uuid as id, voter_id, face_embedding, quality_score FROM face_embeddings")
+        rows = c.fetchall()
+        for r in rows:
+            d = _row_to_dict(r)
+            voter_uuids_with_templates.add(d['id'])
+            records.append(d)
+    except Exception as e:
+        print(f"DB Notice: Multi-template query failed or table missing ({e})")
+
+    # 2. Fetch from legacy voters table for voters missing multi-templates
+    c.execute("SELECT id, voter_id, face_embedding FROM voters")
+    voter_rows = c.fetchall()
+    for r in voter_rows:
+        d = _row_to_dict(r)
+        if d['id'] not in voter_uuids_with_templates:
+            d['quality_score'] = 1.0
+            records.append(d)
+
     conn.close()
-    return [_row_to_dict(r) for r in rows]
+    return records
 
 # ==========================================
 # VOTING SESSION & TIME-BASED DERIVATION
