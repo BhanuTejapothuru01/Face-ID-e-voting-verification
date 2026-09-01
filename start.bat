@@ -10,13 +10,25 @@ ECHO ============================================================
 
 :: 1. Detect Python executable
 SET PYTHON_CMD=
-WHERE python >nul 2>nul
+
+:: Try py launcher first
+py -3.11 --version >nul 2>&1
 IF %ERRORLEVEL% EQU 0 (
-    SET PYTHON_CMD=python
+    SET PYTHON_CMD=py -3.11
 ) ELSE (
-    WHERE py >nul 2>nul
+    py -3 --version >nul 2>&1
     IF %ERRORLEVEL% EQU 0 (
-        SET PYTHON_CMD=py -3.11
+        SET PYTHON_CMD=py -3
+    ) ELSE (
+        python --version >nul 2>&1
+        IF %ERRORLEVEL% EQU 0 (
+            SET PYTHON_CMD=python
+        ) ELSE (
+            python3 --version >nul 2>&1
+            IF %ERRORLEVEL% EQU 0 (
+                SET PYTHON_CMD=python3
+            )
+        )
     )
 )
 
@@ -28,22 +40,32 @@ IF "%PYTHON_CMD%"=="" (
     EXIT /B 1
 )
 
-ECHO [INFO] Using Python executable '%PYTHON_CMD%'
+ECHO [INFO] Using Python command: '%PYTHON_CMD%'
 
 :: 2. Prepare Virtual Environment in backend\venv
-IF NOT EXIST "backend\venv" (
+IF NOT EXIST "backend\venv\Scripts\python.exe" (
     ECHO [INFO] Creating Python virtual environment in backend\venv...
     %PYTHON_CMD% -m venv backend\venv
+    IF %ERRORLEVEL% NEQ 0 (
+        ECHO [ERROR] Failed to create virtual environment.
+        PAUSE
+        EXIT /B 1
+    )
 )
 
 SET VENV_PYTHON=backend\venv\Scripts\python.exe
 SET VENV_PIP=backend\venv\Scripts\pip.exe
 
 :: 3. Upgrade pip and Install Dependencies
-ECHO [INFO] Installing/upgrading backend dependencies...
-"%VENV_PIP%" install --quiet --upgrade pip
+ECHO [INFO] Upgrading pip...
+"%VENV_PIP%" install --upgrade pip
+
 IF EXIST "backend\requirements.txt" (
-    "%VENV_PIP%" install --quiet -r backend\requirements.txt
+    ECHO [INFO] Installing backend dependencies from backend\requirements.txt (this may take a minute)...
+    "%VENV_PIP%" install -r backend\requirements.txt
+    IF %ERRORLEVEL% NEQ 0 (
+        ECHO [WARNING] Pip dependency installation encountered issues. Proceeding to validation check...
+    )
 )
 
 :: 4. Initialize .env Files
@@ -71,7 +93,7 @@ ECHO [INFO] Running backend validation check...
 :: 6. Prepare Frontend Node Dependencies
 IF EXIST "frontend" (
     IF NOT EXIST "frontend\node_modules" (
-        ECHO [INFO] Installing frontend node_modules...
+        ECHO [INFO] Installing frontend npm packages...
         CALL npm --prefix frontend install
     )
 
@@ -88,7 +110,7 @@ IF EXIST "frontend" (
 ECHO ============================================================
 ECHO  [SUCCESS] Environment ready! Launching FaceVote application...
 ECHO ------------------------------------------------------------
-ECHO  Frontend Portal:    http://localhost:5173
+ECHO  Frontend Kiosk:     http://localhost:5173
 ECHO  Backend API:        http://127.0.0.1:8000
 ECHO  API Health Status:  http://127.0.0.1:8000/api/health
 ECHO  Swagger API Docs:   http://127.0.0.1:8000/docs
@@ -102,3 +124,4 @@ START "FaceVote Frontend Portal" cmd /k "cd frontend && npm run dev"
 
 ECHO Both servers launched in dedicated windows.
 PAUSE
+
