@@ -17,6 +17,10 @@ if [ ! -f "$SCRIPT_DIR/backend/.env" ] && [ -f "$SCRIPT_DIR/backend/.env.example
     cp "$SCRIPT_DIR/backend/.env.example" "$SCRIPT_DIR/backend/.env"
 fi
 
+echo "[INFO] Ensuring all AI models are downloaded..."
+"$VENV_PYTHON" "$SCRIPT_DIR/backend/download_models.py"
+
 echo "[INFO] Launching FaceVote Backend API on http://127.0.0.1:8000..."
 cd "$SCRIPT_DIR/backend"
 "$VENV_PYTHON" -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+

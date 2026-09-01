@@ -86,9 +86,13 @@ IF NOT EXIST ".env" (
     )
 )
 
-:: 5. Run Setup Validation Script
+:: 5. Download Models & Run Setup Validation Script
+ECHO [INFO] Ensuring all AI models are downloaded...
+"%VENV_PYTHON%" backend\download_models.py
+
 ECHO [INFO] Running backend validation check...
 "%VENV_PYTHON%" backend\check_setup.py
+
 
 :: 6. Prepare Frontend Node Dependencies
 IF EXIST "frontend" (

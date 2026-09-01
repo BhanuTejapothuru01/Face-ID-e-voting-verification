@@ -62,9 +62,13 @@ if [ ! -f "$SCRIPT_DIR/.env" ] && [ -f "$SCRIPT_DIR/.env.example" ]; then
     echo "[INFO] Created root .env from .env.example"
 fi
 
-# 5. Run Backend Validation Check
+# 5. Download Models & Run Backend Validation Check
+echo "[INFO] Ensuring all AI models are downloaded..."
+"$VENV_PYTHON" "$SCRIPT_DIR/backend/download_models.py"
+
 echo "[INFO] Running setup validation script..."
 "$VENV_PYTHON" "$SCRIPT_DIR/backend/check_setup.py" || true
+
 
 # 6. Prepare Frontend Node Dependencies
 if [ -d "$SCRIPT_DIR/frontend" ]; then
