@@ -9,8 +9,7 @@ VENV_PYTHON="$SCRIPT_DIR/backend/venv/bin/python"
 if [ ! -f "$VENV_PYTHON" ]; then
     echo "[INFO] Initializing backend virtual environment..."
     python3 -m venv "$SCRIPT_DIR/backend/venv"
-    "$SCRIPT_DIR/backend/venv/bin/pip" install --quiet --upgrade pip
-    "$SCRIPT_DIR/backend/venv/bin/pip" install --quiet -r "$SCRIPT_DIR/backend/requirements.txt"
+    "$SCRIPT_DIR/backend/venv/bin/pip" install --quiet -r "$SCRIPT_DIR/backend/requirements.txt" --prefer-binary || true
 fi
 
 if [ ! -f "$SCRIPT_DIR/backend/.env" ] && [ -f "$SCRIPT_DIR/backend/.env.example" ]; then
