@@ -1,5 +1,5 @@
 # FaceVote - Windows PowerShell Launcher & Setup Script
-$ErrorActionPreference = "Stop"
+$ErrorActionPreference = "Continue"
 Set-Location $PSScriptRoot
 
 Write-Host "============================================================" -ForegroundColor Cyan
@@ -9,7 +9,12 @@ Write-Host "============================================================" -Foreg
 # 1. Detect Python
 $pythonCmd = $null
 if (Get-Command "py" -ErrorAction SilentlyContinue) {
-    $pythonCmd = "py -3.11"
+    $test311 = & py -3.11 --version 2>&1
+    if ($LASTEXITCODE -eq 0) {
+        $pythonCmd = "py -3.11"
+    } else {
+        $pythonCmd = "py -3"
+    }
 } elseif (Get-Command "python" -ErrorAction SilentlyContinue) {
     $pythonCmd = "python"
 } elseif (Get-Command "python3" -ErrorAction SilentlyContinue) {
@@ -36,9 +41,11 @@ if (-not (Test-Path $venvPython)) {
 
 # 3. Dependencies Setup
 Write-Host "[INFO] Upgrading pip and installing backend requirements..." -ForegroundColor Yellow
-Start-Process -FilePath $venvPip -ArgumentList "install --upgrade pip" -Wait -NoNewWindow
-if (Test-Path "backend\requirements.txt") {
-    Start-Process -FilePath $venvPip -ArgumentList "install -r backend\requirements.txt" -Wait -NoNewWindow
+if (Test-Path $venvPip) {
+    Start-Process -FilePath $venvPip -ArgumentList "install --upgrade pip" -Wait -NoNewWindow
+    if (Test-Path "backend\requirements.txt") {
+        Start-Process -FilePath $venvPip -ArgumentList "install -r backend\requirements.txt" -Wait -NoNewWindow
+    }
 }
 
 # 4. Environment Variables Setup
@@ -62,8 +69,15 @@ if (-not (Test-Path "frontend\.env")) {
 if (Test-Path "frontend") {
     if (-not (Test-Path "frontend\node_modules")) {
         Write-Host "[INFO] Installing frontend node_modules..." -ForegroundColor Yellow
-        Start-Process -FilePath "npm" -ArgumentList "--prefix frontend install" -Wait -NoNewWindow
+        Start-Process -FilePath "cmd.exe" -ArgumentList "/c cd /d `"$PSScriptRoot\frontend`" && npm install" -Wait -NoNewWindow
     }
+}
+
+# 6. Run Model Download & Validation Check
+if (Test-Path $venvPython) {
+    Write-Host "[INFO] Ensuring AI models are downloaded..." -ForegroundColor Yellow
+    Start-Process -FilePath $venvPython -ArgumentList "backend\download_models.py" -Wait -NoNewWindow
+    Start-Process -FilePath $venvPython -ArgumentList "backend\check_setup.py" -Wait -NoNewWindow
 }
 
 Write-Host "============================================================" -ForegroundColor Green
@@ -73,8 +87,8 @@ Write-Host "  Backend API:        http://127.0.0.1:8000" -ForegroundColor White
 Write-Host "  Swagger API Docs:   http://127.0.0.1:8000/docs" -ForegroundColor White
 Write-Host "============================================================" -ForegroundColor Green
 
-# 6. Launch Backend and Frontend in separate windows
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "Set-Location '$PSScriptRoot\backend'; & '$venvPython' -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload"
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "Set-Location '$PSScriptRoot\frontend'; npm run dev"
+# 7. Launch Backend and Frontend in separate windows
+Start-Process cmd.exe -ArgumentList "/c `"$PSScriptRoot\start-backend.bat`""
+Start-Process cmd.exe -ArgumentList "/c `"$PSScriptRoot\start-frontend.bat`""
 
-Write-Host "Backend and Frontend launched in new PowerShell windows." -ForegroundColor Green
+Write-Host "Backend and Frontend launched in new windows." -ForegroundColor Green

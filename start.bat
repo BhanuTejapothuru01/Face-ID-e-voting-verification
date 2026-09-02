@@ -11,101 +11,99 @@ ECHO ============================================================
 :: 1. Detect Python executable
 SET PYTHON_CMD=
 
-:: Try py launcher first
 py -3.11 --version >nul 2>&1
-IF %ERRORLEVEL% EQU 0 (
+IF !ERRORLEVEL! EQU 0 (
     SET PYTHON_CMD=py -3.11
 ) ELSE (
     py -3 --version >nul 2>&1
-    IF %ERRORLEVEL% EQU 0 (
+    IF !ERRORLEVEL! EQU 0 (
         SET PYTHON_CMD=py -3
     ) ELSE (
         python --version >nul 2>&1
-        IF %ERRORLEVEL% EQU 0 (
+        IF !ERRORLEVEL! EQU 0 (
             SET PYTHON_CMD=python
         ) ELSE (
             python3 --version >nul 2>&1
-            IF %ERRORLEVEL% EQU 0 (
+            IF !ERRORLEVEL! EQU 0 (
                 SET PYTHON_CMD=python3
             )
         )
     )
 )
 
-IF "%PYTHON_CMD%"=="" (
-    ECHO [ERROR] Python is not found in system PATH.
+IF "!PYTHON_CMD!"=="" (
+    ECHO [ERROR] Python was not found in system PATH.
     ECHO Please install Python 3.11 from https://www.python.org/downloads/
     ECHO Ensure "Add python.exe to PATH" is checked during installation.
     PAUSE
     EXIT /B 1
 )
 
-ECHO [INFO] Using Python command: '%PYTHON_CMD%'
+ECHO [INFO] Using Python command: '!PYTHON_CMD!'
 
 :: 2. Prepare Virtual Environment in backend\venv
-IF NOT EXIST "backend\venv\Scripts\python.exe" (
+IF NOT EXIST "%~dp0backend\venv\Scripts\python.exe" (
     ECHO [INFO] Creating Python virtual environment in backend\venv...
-    %PYTHON_CMD% -m venv backend\venv
-    IF %ERRORLEVEL% NEQ 0 (
+    !PYTHON_CMD! -m venv "%~dp0backend\venv"
+    IF !ERRORLEVEL! NEQ 0 (
         ECHO [ERROR] Failed to create virtual environment.
         PAUSE
         EXIT /B 1
     )
 )
 
-SET VENV_PYTHON=backend\venv\Scripts\python.exe
-SET VENV_PIP=backend\venv\Scripts\pip.exe
+SET VENV_PYTHON=%~dp0backend\venv\Scripts\python.exe
+SET VENV_PIP=%~dp0backend\venv\Scripts\pip.exe
 
 :: 3. Upgrade pip and Install Dependencies
 ECHO [INFO] Upgrading pip...
-"%VENV_PIP%" install --upgrade pip
+"%VENV_PIP%" install --quiet --upgrade pip
 
-IF EXIST "backend\requirements.txt" (
+IF EXIST "%~dp0backend\requirements.txt" (
     ECHO [INFO] Installing backend dependencies from backend\requirements.txt (this may take a minute)...
-    "%VENV_PIP%" install -r backend\requirements.txt
-    IF %ERRORLEVEL% NEQ 0 (
+    "%VENV_PIP%" install --quiet -r "%~dp0backend\requirements.txt"
+    IF !ERRORLEVEL! NEQ 0 (
         ECHO [WARNING] Pip dependency installation encountered issues. Proceeding to validation check...
     )
 )
 
 :: 4. Initialize .env Files
-IF NOT EXIST "backend\.env" (
-    IF EXIST "backend\.env.example" (
-        COPY "backend\.env.example" "backend\.env" >nul
+IF NOT EXIST "%~dp0backend\.env" (
+    IF EXIST "%~dp0backend\.env.example" (
+        COPY "%~dp0backend\.env.example" "%~dp0backend\.env" >nul
         ECHO [INFO] Created backend\.env from backend\.env.example
-    ) ELSE IF EXIST ".env.example" (
-        COPY ".env.example" "backend\.env" >nul
+    ) ELSE IF EXIST "%~dp0.env.example" (
+        COPY "%~dp0.env.example" "%~dp0backend\.env" >nul
         ECHO [INFO] Created backend\.env from .env.example
     )
 )
 
-IF NOT EXIST ".env" (
-    IF EXIST ".env.example" (
-        COPY ".env.example" ".env" >nul
+IF NOT EXIST "%~dp0.env" (
+    IF EXIST "%~dp0.env.example" (
+        COPY "%~dp0.env.example" "%~dp0.env" >nul
         ECHO [INFO] Created .env from .env.example
     )
 )
 
 :: 5. Download Models & Run Setup Validation Script
 ECHO [INFO] Ensuring all AI models are downloaded...
-"%VENV_PYTHON%" backend\download_models.py
+"%VENV_PYTHON%" "%~dp0backend\download_models.py"
 
 ECHO [INFO] Running backend validation check...
-"%VENV_PYTHON%" backend\check_setup.py
-
+"%VENV_PYTHON%" "%~dp0backend\check_setup.py"
 
 :: 6. Prepare Frontend Node Dependencies
-IF EXIST "frontend" (
-    IF NOT EXIST "frontend\node_modules" (
+IF EXIST "%~dp0frontend" (
+    IF NOT EXIST "%~dp0frontend\node_modules" (
         ECHO [INFO] Installing frontend npm packages...
-        CALL npm --prefix frontend install
+        CALL npm --prefix "%~dp0frontend" install
     )
 
-    IF NOT EXIST "frontend\.env" (
-        IF EXIST "frontend\.env.example" (
-            COPY "frontend\.env.example" "frontend\.env" >nul
+    IF NOT EXIST "%~dp0frontend\.env" (
+        IF EXIST "%~dp0frontend\.env.example" (
+            COPY "%~dp0frontend\.env.example" "%~dp0frontend\.env" >nul
         ) ELSE (
-            ECHO VITE_API_URL=http://127.0.0.1:8000 > frontend\.env
+            ECHO VITE_API_URL=http://127.0.0.1:8000 > "%~dp0frontend\.env"
         )
         ECHO [INFO] Initialized frontend\.env
     )
@@ -120,13 +118,9 @@ ECHO  API Health Status:  http://127.0.0.1:8000/api/health
 ECHO  Swagger API Docs:   http://127.0.0.1:8000/docs
 ECHO ============================================================
 
-:: Start Backend in separate window
-START "FaceVote Backend Server" cmd /k "cd /d "%~dp0backend" && "%~dp0backend\venv\Scripts\python.exe" -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload"
+:: Start Backend and Frontend in dedicated windows
+START "FaceVote Backend Server" cmd /c "%~dp0start-backend.bat"
+START "FaceVote Frontend Portal" cmd /c "%~dp0start-frontend.bat"
 
-:: Start Frontend in separate window
-START "FaceVote Frontend Portal" cmd /k "cd /d "%~dp0frontend" && npm run dev"
-
-ECHO Both servers launched in dedicated windows.
+ECHO Both servers launched successfully in dedicated windows.
 PAUSE
-
-

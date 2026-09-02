@@ -1,8 +1,16 @@
 @echo off
-CD /D "%~dp0\frontend"
+SETLOCAL EnableDelayedExpansion
+
+CD /D "%~dp0"
+
+ECHO ============================================================
+ECHO            FACEVOTE FRONTEND KIOSK PORTAL
+ECHO ============================================================
+
+CD /D "%~dp0frontend"
 
 IF NOT EXIST "node_modules" (
-    ECHO [INFO] Installing frontend node_modules...
+    ECHO [INFO] Installing frontend npm packages (node_modules)...
     CALL npm install
 )
 
@@ -14,6 +22,6 @@ IF NOT EXIST ".env" (
     )
 )
 
-ECHO [INFO] Launching FaceVote Frontend Kiosk on http://localhost:5173...
+ECHO [INFO] Launching FaceVote Frontend Portal on http://localhost:5173...
 CALL npm run dev
 PAUSE
