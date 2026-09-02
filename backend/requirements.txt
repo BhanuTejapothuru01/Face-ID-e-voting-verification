@@ -1,9 +1,7 @@
 fastapi>=0.100.0
 uvicorn>=0.22.0
-numpy>=1.24.0
-ml-dtypes>=0.5.0
+numpy>=1.24.0,<2.0.0
 opencv-python-headless>=4.8.0
-insightface>=0.7.3
 onnxruntime>=1.15.0
 faiss-cpu>=1.7.4
 python-dotenv>=1.0.0
@@ -15,4 +13,8 @@ slowapi>=0.1.8
 PyJWT>=2.8.0
 supabase>=2.30.0
 httpx>=0.28.0
-
+pillow>=10.0.0
+tqdm>=4.65.0
+requests>=2.31.0
+scikit-image>=0.21.0
+--no-deps insightface==0.7.3
