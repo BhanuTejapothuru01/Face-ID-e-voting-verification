@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: facevote-backend
+    env: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: SIMILARITY_THRESHOLD
+        value: 0.68
+      - key: ADMIN_SECRET
+        value: 602142
+      - key: CORS_ORIGINS
+        value: "*"
