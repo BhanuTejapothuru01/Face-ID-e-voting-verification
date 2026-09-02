@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Header
 from passlib.context import CryptContext
 from pydantic import BaseModel
 from typing import Optional, List
+from datetime import datetime, timezone
 import time
 import jwt
 
@@ -11,7 +12,7 @@ from app.db.local_db import (
     get_active_session, get_all_sessions, get_session_by_id, create_full_session,
     set_session_status, reset_voter_ballot, reset_all_ballots,
     get_candidates_by_session, add_candidate, get_session_results,
-    get_all_votes_log, get_all_candidates_global
+    get_all_votes_log, get_all_candidates_global, get_session_results_detailed
 )
 from app.services.faiss_search import remove_from_index
 
@@ -21,6 +22,20 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 _admin_hash = pwd_context.hash(ADMIN_SECRET if ADMIN_SECRET else "admin123")
 
 router = APIRouter()
+
+@router.get("/api/public/stats")
+def get_public_stats():
+    voters = get_all_voters(include_embeddings=False)
+    sessions = get_all_sessions()
+    total_voters = len(voters)
+    votes_cast = sum(1 for v in voters if v.get('has_voted') == 1)
+    active_elections = sum(1 for s in sessions if s.get('status') == 'ACTIVE')
+    return {
+        "registered_voters": total_voters,
+        "votes_cast": votes_cast,
+        "active_elections": active_elections
+    }
+
 
 class LoginRequest(BaseModel):
     password: str
@@ -164,6 +179,7 @@ def get_all_sessions_api(admin: bool = Depends(get_current_admin)):
     return {"sessions": annotated}
 
 @router.post("/api/admin/sessions/create")
+@router.post("/api/admin/sessions")
 def create_session_api(req: CreateSessionRequest, admin: bool = Depends(get_current_admin)):
     if not req.title or not req.title.strip():
         raise HTTPException(status_code=400, detail="Session name/title cannot be empty.")
@@ -238,10 +254,13 @@ def add_candidate_api(session_id: str, cand: CandidateInput, admin: bool = Depen
     result = add_candidate(session_id, cand.name, cand.party_or_position)
     return {"status": "success", "candidate": result}
 
+@router.get("/api/admin/elections/{session_id}/results")
 @router.get("/api/admin/sessions/{session_id}/results")
 def get_session_results_api(session_id: str, admin: bool = Depends(get_current_admin)):
-    results = get_session_results(session_id)
-    return {"session_id": session_id, "results": results}
+    detailed = get_session_results_detailed(session_id)
+    if not detailed:
+        raise HTTPException(status_code=404, detail="Session not found.")
+    return detailed
 
 @router.post("/api/admin/session/reset-all")
 def reset_all_votes_api(admin: bool = Depends(get_current_admin)):

@@ -6,6 +6,7 @@ import { Badge } from '../components/ui/Badge';
 import { StatCard } from '../components/admin/StatCard';
 import { TurnoutChart } from '../components/admin/TurnoutChart';
 import { SystemHealthPanel } from '../components/admin/SystemHealthPanel';
+import { ElectionResultsPanel } from '../components/admin/ElectionResultsPanel';
 import { SketchShield } from '../components/ui/DoodleAccents';
 import {
   Users,
@@ -56,6 +57,13 @@ export default function AdminDashboard() {
         fetch(`${API_BASE_URL}/api/admin/stats`, { headers: { Authorization: `Bearer ${authToken}` } }),
         fetch(`${API_BASE_URL}/api/admin/votes`, { headers: { Authorization: `Bearer ${authToken}` } }),
       ]);
+
+      if (vRes.status === 401 || sRes.status === 401 || logRes.status === 401) {
+        localStorage.removeItem('admin_token');
+        setToken(null);
+        setError('Admin session expired or invalid passcode key. Please log in again.');
+        return;
+      }
 
       if (vRes.ok) {
         const vData = await vRes.json();
@@ -182,6 +190,9 @@ export default function AdminDashboard() {
           <StatCard title="Votes Cast" value={stats?.votes_cast || voters.filter(v => v.has_voted === 1).length} icon={Vote} />
           <StatCard title="Turnout Rate" value={`${stats?.turnout_percent || 0}%`} icon={Activity} />
         </div>
+
+        {/* Detailed Election Results & Standings */}
+        <ElectionResultsPanel token={token} />
 
         {/* Turnout & System Health */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">

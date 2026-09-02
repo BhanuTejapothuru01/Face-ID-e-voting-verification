@@ -5,6 +5,7 @@ import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { Modal } from '../components/ui/Modal';
 import { SketchEmptyBox } from '../components/ui/DoodleAccents';
+import { useNavigate } from 'react-router-dom';
 import {
   Vote,
   Plus,
@@ -17,11 +18,13 @@ import {
   Clock,
   Users,
   Check,
-  X
+  X,
+  BarChart3
 } from 'lucide-react';
 import { API_BASE_URL } from '../config/api';
 
 export default function SessionManagement() {
+  const navigate = useNavigate();
   const [token, setToken] = useState(localStorage.getItem('admin_token'));
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -50,6 +53,12 @@ export default function SessionManagement() {
       const res = await fetch(`${API_BASE_URL}/api/admin/sessions`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+      if (res.status === 401) {
+        localStorage.removeItem('admin_token');
+        setToken(null);
+        window.location.href = '/admin';
+        return;
+      }
       if (res.ok) {
         const data = await res.json();
         setSessions(data.sessions || []);
@@ -65,6 +74,11 @@ export default function SessionManagement() {
     if (token) fetchSessions();
   }, [token]);
 
+  if (!token) {
+    window.location.href = '/admin';
+    return null;
+  }
+
   const handleCopyLink = (shareToken) => {
     const fullUrl = `${window.location.origin}/vote/${shareToken}`;
     navigator.clipboard.writeText(fullUrl);
@@ -74,7 +88,7 @@ export default function SessionManagement() {
 
   const handleToggleStatus = async (sessionId, newStatus) => {
     try {
-      await fetch(`${API_BASE_URL}/api/admin/sessions/${sessionId}/status`, {
+      const res = await fetch(`${API_BASE_URL}/api/admin/sessions/${sessionId}/status`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -82,6 +96,11 @@ export default function SessionManagement() {
         },
         body: JSON.stringify({ status: newStatus }),
       });
+      if (res.status === 401) {
+        localStorage.removeItem('admin_token');
+        window.location.href = '/admin';
+        return;
+      }
       fetchSessions();
     } catch (err) {
       console.error('Update status failed:', err);
@@ -115,6 +134,12 @@ export default function SessionManagement() {
         }),
       });
 
+      if (res.status === 401) {
+        localStorage.removeItem('admin_token');
+        window.location.href = '/admin';
+        return;
+      }
+
       if (res.ok) {
         setIsWizardOpen(false);
         setTitle('');
@@ -129,7 +154,7 @@ export default function SessionManagement() {
 
   return (
     <div className="min-h-screen bg-[#050505] text-white flex font-sans">
-      <Sidebar onLogout={() => localStorage.removeItem('admin_token')} />
+      <Sidebar onLogout={() => { localStorage.removeItem('admin_token'); window.location.href = '/admin'; }} />
 
       <main className="flex-1 p-8 space-y-8 overflow-y-auto">
         <div className="flex items-center justify-between">
@@ -193,6 +218,9 @@ export default function SessionManagement() {
                         </div>
                       </td>
                       <td className="p-3 text-right space-x-2">
+                        <Button variant="ghost" size="sm" icon={BarChart3} onClick={() => navigate('/admin#election-results')}>
+                          Results
+                        </Button>
                         {s.status === 'ACTIVE' ? (
                           <Button variant="outline" size="sm" icon={Pause} onClick={() => handleToggleStatus(s.session_id, 'PAUSED')}>
                             Pause

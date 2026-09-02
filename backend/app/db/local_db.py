@@ -48,21 +48,6 @@ def init_db():
     if 'voted_session_id' not in existing_cols:
         c.execute('ALTER TABLE voters ADD COLUMN voted_session_id TEXT')
 
-    # 1B. Multi-Template Face Embeddings Table
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS face_embeddings (
-            id TEXT PRIMARY KEY,
-            voter_uuid TEXT NOT NULL,
-            voter_id TEXT NOT NULL,
-            face_embedding TEXT NOT NULL,
-            quality_score REAL NOT NULL DEFAULT 1.0,
-            created_at TEXT NOT NULL,
-            FOREIGN KEY (voter_uuid) REFERENCES voters(id) ON DELETE CASCADE
-        )
-    ''')
-    c.execute('CREATE INDEX IF NOT EXISTS idx_face_embeddings_voter ON face_embeddings(voter_uuid)')
-    c.execute('CREATE INDEX IF NOT EXISTS idx_face_embeddings_voter_id ON face_embeddings(voter_id)')
-
     # 2. Voting Sessions Table
     c.execute('''
         CREATE TABLE IF NOT EXISTS voting_sessions (
@@ -129,13 +114,17 @@ def init_db():
             UNIQUE(session_id, voter_id)
         )
     ''')
-    c.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_session_voter ON votes(session_id, voter_id)')
-
-    # Ensure candidate_id column exists
-    c.execute("PRAGMA table_info(votes)")
-    cols = [row[1] for row in c.fetchall()]
-    if 'candidate_id' not in cols:
-        c.execute("ALTER TABLE votes ADD COLUMN candidate_id TEXT DEFAULT ''")
+    # 5. Session Verifications Table
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS session_verifications (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            session_id TEXT NOT NULL,
+            voter_id TEXT NOT NULL,
+            verified_at TEXT NOT NULL,
+            UNIQUE(session_id, voter_id)
+        )
+    ''')
+    c.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_session_verified ON session_verifications(session_id, voter_id)')
 
     conn.commit()
     conn.close()
@@ -294,64 +283,14 @@ def delete_voter(voter_id: str):
     
     return [{'voter_id': voter_id}] if rows_affected > 0 else None
 
-def insert_voter_embeddings(voter_uuid: str, voter_id: str, templates: list[tuple[list[float], float]]):
-    """Inserts multiple face templates for a registered voter."""
-    conn = get_connection()
-    c = conn.cursor()
-    now = datetime.now(timezone.utc).isoformat()
-    
-    rows = []
-    for emb, quality in templates:
-        tmpl_id = str(uuid.uuid4())
-        emb_str = json.dumps(emb)
-        rows.append((tmpl_id, voter_uuid, voter_id, emb_str, float(quality), now))
-        
-    try:
-        c.executemany('''
-            INSERT INTO face_embeddings (id, voter_uuid, voter_id, face_embedding, quality_score, created_at)
-            VALUES (?, ?, ?, ?, ?, ?)
-        ''', rows)
-        conn.commit()
-        return True
-    except Exception as e:
-        print(f"DB Error insert_voter_embeddings: {e}")
-        return False
-    finally:
-        conn.close()
-
 def get_all_embeddings_for_index():
-    """
-    Retrieve all embeddings and voter UUIDs for building the FAISS index.
-    Loads from multi-template face_embeddings table AND legacy voters table for backward compatibility.
-    """
+    """Retrieve all embeddings and voter UUIDs for building the FAISS index."""
     conn = get_connection()
     c = conn.cursor()
-    
-    records = []
-    voter_uuids_with_templates = set()
-    
-    # 1. Fetch from multi-template face_embeddings table if available
-    try:
-        c.execute("SELECT voter_uuid as id, voter_id, face_embedding, quality_score FROM face_embeddings")
-        rows = c.fetchall()
-        for r in rows:
-            d = _row_to_dict(r)
-            voter_uuids_with_templates.add(d['id'])
-            records.append(d)
-    except Exception as e:
-        print(f"DB Notice: Multi-template query failed or table missing ({e})")
-
-    # 2. Fetch from legacy voters table for voters missing multi-templates
-    c.execute("SELECT id, voter_id, face_embedding FROM voters")
-    voter_rows = c.fetchall()
-    for r in voter_rows:
-        d = _row_to_dict(r)
-        if d['id'] not in voter_uuids_with_templates:
-            d['quality_score'] = 1.0
-            records.append(d)
-
+    c.execute("SELECT id, face_embedding FROM voters")
+    rows = c.fetchall()
     conn.close()
-    return records
+    return [_row_to_dict(r) for r in rows]
 
 # ==========================================
 # VOTING SESSION & TIME-BASED DERIVATION
@@ -411,11 +350,11 @@ def get_session_by_id(session_id: str):
     return _row_to_dict(row)
 
 def get_session_by_share_token(share_token: str):
-    """Retrieve session by unique share_token."""
+    """Retrieve session by unique share_token or session_id."""
     update_session_statuses_by_time()
     conn = get_connection()
     c = conn.cursor()
-    c.execute("SELECT * FROM voting_sessions WHERE share_token = ?", (share_token,))
+    c.execute("SELECT * FROM voting_sessions WHERE share_token = ? OR session_id = ?", (share_token, share_token))
     row = c.fetchone()
     conn.close()
     return _row_to_dict(row)
@@ -617,4 +556,108 @@ def get_all_candidates_global():
     rows = c.fetchall()
     conn.close()
     return [_row_to_dict(r) for r in rows]
+
+def record_voter_verification(session_id: str, voter_id: str):
+    """Record that a voter successfully passed biometric verification for a session."""
+    if not session_id or not voter_id:
+        return
+    conn = get_connection()
+    c = conn.cursor()
+    now_iso = datetime.now(timezone.utc).isoformat()
+    try:
+        c.execute('''
+            INSERT OR IGNORE INTO session_verifications (session_id, voter_id, verified_at)
+            VALUES (?, ?, ?)
+        ''', (session_id, voter_id, now_iso))
+        conn.commit()
+    except Exception:
+        conn.rollback()
+    finally:
+        conn.close()
+
+def get_session_results_detailed(session_id: str):
+    """Get complete session-isolated results & telemetry for Admin Dashboard."""
+    session = get_session_by_id(session_id)
+    if not session:
+        return None
+        
+    voters = get_all_voters(include_embeddings=False)
+    total_registered = len(voters)
+    
+    conn = get_connection()
+    c = conn.cursor()
+    
+    # Verified voters count (union of session_verifications and votes)
+    c.execute('''
+        SELECT COUNT(DISTINCT voter_id) FROM (
+            SELECT voter_id FROM session_verifications WHERE session_id = ?
+            UNION
+            SELECT voter_id FROM votes WHERE session_id = ?
+        )
+    ''', (session_id, session_id))
+    v_row = c.fetchone()
+    total_verified = v_row[0] if v_row else 0
+    
+    # Candidate vote counts
+    c.execute('''
+        SELECT c.candidate_id, c.name, c.party_or_position, COUNT(v.id) as vote_count
+        FROM candidates c
+        LEFT JOIN votes v ON c.candidate_id = v.candidate_id AND v.session_id = ?
+        WHERE c.session_id = ?
+        GROUP BY c.candidate_id, c.name, c.party_or_position
+        ORDER BY vote_count DESC, c.name ASC
+    ''', (session_id, session_id))
+    
+    candidate_rows = c.fetchall()
+    conn.close()
+    
+    total_votes_cast = sum(r['vote_count'] for r in candidate_rows)
+    total_verified = max(total_verified, total_votes_cast)
+    remaining_voters = max(0, total_registered - total_votes_cast)
+    participation_pct = min(100.0, round((total_votes_cast / total_registered * 100), 2)) if total_registered > 0 else 0.0
+    
+    candidates_list = []
+    for r in candidate_rows:
+        v_cnt = r['vote_count']
+        pct = min(100.0, round((v_cnt / total_votes_cast * 100), 2)) if total_votes_cast > 0 else 0.0
+        candidates_list.append({
+            "candidate_id": r['candidate_id'],
+            "candidate_name": r['name'],
+            "name": r['name'],
+            "party_or_position": r['party_or_position'],
+            "vote_count": v_cnt,
+            "percentage": pct
+        })
+        
+    top_candidate = None
+    if candidates_list and total_votes_cast > 0:
+        top_candidate = {
+            "candidate_id": candidates_list[0]["candidate_id"],
+            "candidate_name": candidates_list[0]["candidate_name"],
+            "name": candidates_list[0]["candidate_name"],
+            "party_or_position": candidates_list[0]["party_or_position"],
+            "vote_count": candidates_list[0]["vote_count"],
+            "percentage": candidates_list[0]["percentage"]
+        }
+        
+    status = session.get('status', 'SCHEDULED')
+    is_completed = status in ['ENDED', 'COMPLETED']
+    leading_candidate = top_candidate if not is_completed else None
+    winner = top_candidate if is_completed else None
+    
+    return {
+        "session_id": session['session_id'],
+        "session_name": session.get('title', ''),
+        "title": session.get('title', ''),
+        "status": status,
+        "total_registered_voters": total_registered,
+        "total_verified_voters": total_verified,
+        "total_votes_cast": total_votes_cast,
+        "remaining_voters": remaining_voters,
+        "participation_percentage": participation_pct,
+        "candidates": candidates_list,
+        "leading_candidate": leading_candidate,
+        "winner": winner
+    }
+
 

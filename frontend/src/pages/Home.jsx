@@ -34,16 +34,18 @@ export default function Home() {
   });
 
   useEffect(() => {
-    // Fetch live counts if available
-    Promise.all([
-      fetch(`${API_BASE_URL}/api/voters`).then((res) => res.json()).catch(() => null),
-      fetch(`${API_BASE_URL}/api/admin/sessions`).then((res) => res.json()).catch(() => null)
-    ]).then(([vData, sData]) => {
-      const registered = vData?.voters?.length || 0;
-      const votes = vData?.voters?.filter((v) => v.has_voted === 1).length || 0;
-      const active = sData?.sessions?.filter((s) => s.status === 'ACTIVE').length || 1;
-      setStats({ registeredVoters: registered, votesCast: votes, activeElections: active });
-    });
+    fetch(`${API_BASE_URL}/api/public/stats`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data) {
+          setStats({
+            registeredVoters: data.registered_voters || 0,
+            votesCast: data.votes_cast || 0,
+            activeElections: data.active_elections || 0
+          });
+        }
+      })
+      .catch(() => null);
   }, []);
 
   return (

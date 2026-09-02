@@ -19,16 +19,14 @@ export default function PublicElection() {
     // Attempt resolving session by shareToken or sessionId
     fetch(`${API_BASE_URL}/api/voting/session-by-token/${sessionId}`)
       .then((res) => {
-        if (!res.ok || res.status === 404) {
-          return fetch(`${API_BASE_URL}/api/admin/sessions/${sessionId}`).then((r) => {
-            if (!r.ok) throw new Error('Election session not found');
-            return r.json();
-          });
-        }
+        if (!res.ok) throw new Error('Election session not found');
         return res.json();
       })
       .then((data) => {
-        setSession(data.session || data);
+        if (!data.session || data.status === 'NOT_FOUND') {
+          throw new Error('Election session not found');
+        }
+        setSession(data.session);
         setLoading(false);
       })
       .catch((err) => {

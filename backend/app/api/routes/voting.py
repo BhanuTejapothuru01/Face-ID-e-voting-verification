@@ -12,7 +12,8 @@ from app.services.faiss_search import search_index
 from app.db.local_db import (
     get_voter_by_uuid, get_active_session, get_candidates_by_session, 
     submit_voter_ballot, get_all_sessions, get_session_by_id,
-    get_voter_vote_for_session, get_session_by_share_token
+    get_voter_vote_for_session, get_session_by_share_token,
+    record_voter_verification
 )
 from app.core.config import SIMILARITY_THRESHOLD, ADMIN_SECRET
 from app.api.routes.registration import decode_image
@@ -209,7 +210,8 @@ async def verify_face_lock(
                 "voted_at": session_vote.get('cast_at')
             }
 
-        # Voter is ELIGIBLE & HAS NOT VOTED -> Generate Vote Token
+        # Voter is ELIGIBLE & HAS NOT VOTED -> Record verification & Generate Vote Token
+        record_voter_verification(session['session_id'], voter_data['voter_id'])
         token_expires = time.time() + 300  # Token valid for 5 minutes
         vote_token = jwt.encode({
             "voter_id": voter_data['voter_id'],

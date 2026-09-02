@@ -39,9 +39,12 @@ fi
 VENV_PYTHON="$VENV_DIR/bin/python"
 VENV_PIP="$VENV_DIR/bin/pip"
 
-echo "[INFO] Verifying backend dependencies..."
-"$VENV_PIP" install --quiet setuptools wheel --prefer-binary || true
-"$VENV_PIP" install --quiet -r "$SCRIPT_DIR/backend/requirements.txt" --prefer-binary || true
+# 3. Upgrade pip & Install Requirements
+echo "[INFO] Upgrading pip and installing backend dependencies..."
+"$VENV_PIP" install --quiet --upgrade pip
+if [ -f "$SCRIPT_DIR/backend/requirements.txt" ]; then
+    "$VENV_PIP" install --quiet -r "$SCRIPT_DIR/backend/requirements.txt"
+fi
 
 # 4. Initialize .env files if missing
 if [ ! -f "$SCRIPT_DIR/backend/.env" ]; then
