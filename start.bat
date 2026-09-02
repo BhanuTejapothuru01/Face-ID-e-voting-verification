@@ -8,7 +8,7 @@ ECHO ============================================================
 ECHO          FACEVOTE -- LOCAL ONE-CLICK LAUNCHER (WINDOWS)
 ECHO ============================================================
 
-:: 1. Detect Python executable
+:: 1. Detect Python Executable
 SET PYTHON_CMD=
 
 py -3.11 --version >nul 2>&1
@@ -55,15 +55,15 @@ IF NOT EXIST "%~dp0backend\venv\Scripts\python.exe" (
 SET VENV_PYTHON=%~dp0backend\venv\Scripts\python.exe
 SET VENV_PIP=%~dp0backend\venv\Scripts\pip.exe
 
-:: 3. Upgrade pip and Install Dependencies
+:: 3. Upgrade Pip & Install Backend Dependencies
 ECHO [INFO] Upgrading pip...
 "%VENV_PIP%" install --quiet --upgrade pip
 
 IF EXIST "%~dp0backend\requirements.txt" (
-    ECHO [INFO] Installing backend dependencies from backend\requirements.txt (this may take a minute)...
+    ECHO [INFO] Installing backend dependencies (this may take a minute)...
     "%VENV_PIP%" install --quiet -r "%~dp0backend\requirements.txt"
     IF !ERRORLEVEL! NEQ 0 (
-        ECHO [WARNING] Pip dependency installation encountered issues. Proceeding to validation check...
+        ECHO [WARNING] Dependency installation encountered non-fatal issues. Proceeding to validation...
     )
 )
 
@@ -85,17 +85,17 @@ IF NOT EXIST "%~dp0.env" (
     )
 )
 
-:: 5. Download Models & Run Setup Validation Script
+:: 5. Download AI Models & Run Setup Validation Check
 ECHO [INFO] Ensuring all AI models are downloaded...
 "%VENV_PYTHON%" "%~dp0backend\download_models.py"
 
-ECHO [INFO] Running backend validation check...
+ECHO [INFO] Running backend setup validation check...
 "%VENV_PYTHON%" "%~dp0backend\check_setup.py"
 
 :: 6. Prepare Frontend Node Dependencies
 IF EXIST "%~dp0frontend" (
     IF NOT EXIST "%~dp0frontend\node_modules" (
-        ECHO [INFO] Installing frontend npm packages...
+        ECHO [INFO] Installing frontend node packages...
         CALL npm --prefix "%~dp0frontend" install
     )
 
@@ -118,8 +118,8 @@ ECHO  API Health Status:  http://127.0.0.1:8000/api/health
 ECHO  Swagger API Docs:   http://127.0.0.1:8000/docs
 ECHO ============================================================
 
-:: Start Backend and Frontend in dedicated windows
-START "FaceVote Backend Server" cmd /c "%~dp0start-backend.bat"
+:: Start Backend and Frontend in separate dedicated windows
+START "FaceVote Backend API" cmd /c "%~dp0start-backend.bat"
 START "FaceVote Frontend Portal" cmd /c "%~dp0start-frontend.bat"
 
 ECHO Both servers launched successfully in dedicated windows.

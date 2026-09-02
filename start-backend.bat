@@ -4,10 +4,10 @@ SETLOCAL EnableDelayedExpansion
 CD /D "%~dp0"
 
 ECHO ============================================================
-ECHO              FACEVOTE BACKEND API SERVER
+ECHO              FACEVOTE -- BACKEND API SERVER
 ECHO ============================================================
 
-:: Check Python virtual environment
+:: 1. Check or Create Python Virtual Environment
 IF NOT EXIST "%~dp0backend\venv\Scripts\python.exe" (
     ECHO [INFO] Creating Python virtual environment in backend\venv...
     
@@ -33,7 +33,7 @@ IF NOT EXIST "%~dp0backend\venv\Scripts\python.exe" (
     )
 
     IF "!PYTHON_CMD!"=="" (
-        ECHO [ERROR] Python is not installed or not found in system PATH.
+        ECHO [ERROR] Python was not found in system PATH.
         ECHO Please install Python 3.11 from https://www.python.org/downloads/
         PAUSE
         EXIT /B 1
@@ -50,6 +50,7 @@ IF NOT EXIST "%~dp0backend\venv\Scripts\python.exe" (
 SET VENV_PYTHON=%~dp0backend\venv\Scripts\python.exe
 SET VENV_PIP=%~dp0backend\venv\Scripts\pip.exe
 
+:: 2. Dependencies & Config Initialization
 IF EXIST "%~dp0backend\requirements.txt" (
     ECHO [INFO] Ensuring backend dependencies are installed...
     "%VENV_PIP%" install --quiet -r "%~dp0backend\requirements.txt"
@@ -63,10 +64,11 @@ IF NOT EXIST "%~dp0backend\.env" (
     )
 )
 
+:: 3. Download Models & Launch Server
 ECHO [INFO] Ensuring all AI models are downloaded...
 "%VENV_PYTHON%" "%~dp0backend\download_models.py"
 
-ECHO [INFO] Launching FaceVote Backend API on http://127.0.0.1:8000...
+ECHO [INFO] Launching Backend API on http://127.0.0.1:8000...
 CD /D "%~dp0backend"
 "%VENV_PYTHON%" -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 PAUSE
