@@ -31,8 +31,9 @@ def get_face_app():
                 allowed_modules=['detection', 'recognition'], 
                 providers=['CPUExecutionProvider']
             )
-            _app.prepare(ctx_id=0, det_size=(640, 640))
-            print("[INFO] InsightFace 'buffalo_l' model loaded successfully.")
+            det_dim = int(os.getenv("FACE_DET_SIZE", "320" if (os.getenv("RENDER") or os.getenv("VERCEL")) else "640"))
+            _app.prepare(ctx_id=0, det_size=(det_dim, det_dim))
+            print(f"[INFO] InsightFace 'buffalo_l' model loaded successfully (det_size: {det_dim}x{det_dim}).")
         except Exception as e:
             print(f"[ERROR] Failed to initialize InsightFace model: {e}")
             raise RuntimeError(f"InsightFace model initialization failed: {e}. Check directory permissions or network connection for initial download.")
