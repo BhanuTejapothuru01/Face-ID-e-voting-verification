@@ -3,6 +3,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# Database Mode Selection (Default to local SQLite as requested)
+USE_SQLITE = os.getenv("USE_SQLITE", "true").lower() in ("true", "1", "yes")
+
 # Server & Security Settings
 PORT = int(os.getenv("PORT", "8000"))
 CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000")

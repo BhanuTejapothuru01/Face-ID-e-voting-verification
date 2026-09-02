@@ -3,10 +3,13 @@ FaceVote — Dynamic Database Router
 Delegates database queries to Supabase DB if accessible, or SQLite local DB as fallback.
 """
 
+from app.core.config import USE_SQLITE
 from app.db import local_db
 from app.db import supabase_db
 
 def _use_supabase():
+    if USE_SQLITE:
+        return False
     return supabase_db.is_supabase_available()
 
 def init_db():
